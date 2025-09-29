@@ -1,12 +1,6 @@
 package com.filizzola.projeto_mobile
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -34,75 +27,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHost
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
-
-class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            ProjetoMobileTheme {
-                val navController = rememberNavController()
-
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Surface(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        NavHost(
-                            navController = navController,
-                            startDestination = "login"
-                        ) {
-                            composable("login") {
-                                GreetingLogin(
-                                    modifier = Modifier.padding(innerPadding),
-                                    onLoginClick = {
-                                        navController.navigate("register")
-                                    }
-                                )
-                            }
-
-                            composable("register") {
-                                RegisterScreen(
-                                    modifier = Modifier.padding(innerPadding),
-                                    onRegisterClick = {
-                                        navController.navigate("login")
-                                    }
-                                )
-                            }
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
-fun bgImage(modifier: Modifier = Modifier){
-    val image = painterResource(R.drawable.login_pg_bg)
-    Image(
-        painter = image,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-    )
-}
-
-@Composable
-fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
+fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
+    var usernameInput by remember { mutableStateOf("") }
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("")}
+    var passConfirmInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
 
     val bgColor = MaterialTheme.colorScheme.background
@@ -118,12 +54,10 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
             .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-
-
         Surface(
             color = bgColor,
             modifier = Modifier
-                .fillMaxHeight(0.55f)
+                .fillMaxHeight(0.75f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
@@ -137,13 +71,25 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "NoteSync",
+                    text = "Register",
                     modifier = modifier
                         .padding(bottom = 32.dp, top = 32.dp),
                     fontSize = 30.sp
                 )
 
-                LoginField(
+                RegisterField(
+                    label = "Username",
+                    leadingIcon = R.drawable.user,
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Next
+                    ),
+                    value = usernameInput,
+                    onValueChanged = { usernameInput = it },
+                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                )
+
+                RegisterField(
                     label = "E-Mail",
                     leadingIcon = R.drawable.mail,
                     keyboardOptions = KeyboardOptions.Default.copy(
@@ -155,7 +101,7 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
                     modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
-                LoginField(
+                RegisterField(
                     label = "Password",
                     leadingIcon = R.drawable.lock,
                     keyboardOptions = KeyboardOptions.Default.copy(
@@ -167,35 +113,39 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
                     modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
+                RegisterField(
+                    label = "Confirm Password",
+                    leadingIcon = R.drawable.lock,
+                    keyboardOptions = KeyboardOptions.Default.copy(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Send
+                    ),
+                    value = passConfirmInput,
+                    onValueChanged = { passConfirmInput = it },
+                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                )
+
                 Button(
-                    onClick = onLoginClick,
+                    onClick = onRegisterClick,
                     modifier = modifier
-                        .padding(bottom = 16.dp)
+                        .padding(16.dp)
                 ) {
-                    Text(text = "Login", fontSize = 24.sp)
+                    Text(text = "Register", fontSize = 24.sp)
                 }
             }
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    ProjetoMobileTheme {
-//        GreetingLogin()
-//    }
-//}
-
 @Composable
-fun LoginField(
+fun RegisterField(
     label: String,
     @DrawableRes leadingIcon: Int,
     keyboardOptions: KeyboardOptions,
     value: String,
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit
-    ){
+){
     TextField(
         value = value,
         singleLine = true,
