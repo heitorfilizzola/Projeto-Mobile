@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +45,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
     var passConfirmInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
 
+    val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
 
     bgImage(
@@ -79,7 +84,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
 
                 RegisterField(
                     label = "Username",
-                    leadingIcon = R.drawable.user,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.AccountCircle,
+                            contentDescription = "Email icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Next
@@ -89,9 +99,14 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                     modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
-                RegisterField(
+                LoginField(
                     label = "E-Mail",
-                    leadingIcon = R.drawable.mail,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.Email,
+                            contentDescription = "Email icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
@@ -103,7 +118,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
 
                 RegisterField(
                     label = "Password",
-                    leadingIcon = R.drawable.lock,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.Lock,
+                            contentDescription = "Padlock icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Send
@@ -115,7 +135,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
 
                 RegisterField(
                     label = "Confirm Password",
-                    leadingIcon = R.drawable.lock,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.Lock,
+                            contentDescription = "Padlock icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Send
@@ -140,7 +165,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
 @Composable
 fun RegisterField(
     label: String,
-    @DrawableRes leadingIcon: Int,
+    leadingIcon: @Composable (() -> Unit)?,
     keyboardOptions: KeyboardOptions,
     value: String,
     modifier: Modifier = Modifier,
@@ -149,7 +174,7 @@ fun RegisterField(
     TextField(
         value = value,
         singleLine = true,
-        leadingIcon = {Icon(painter = painterResource(id = leadingIcon), null)},
+        leadingIcon = leadingIcon,
         modifier = modifier,
         onValueChange = onValueChanged,
         label = {Text(label)},

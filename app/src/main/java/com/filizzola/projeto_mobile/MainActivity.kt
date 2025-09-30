@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -105,6 +108,7 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
     var passInput by remember { mutableStateOf("")}
     var borderGray = Color(0xFFCACACA)
 
+    val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
 
     bgImage(
@@ -145,26 +149,40 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
 
                 LoginField(
                     label = "E-Mail",
-                    leadingIcon = R.drawable.mail,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.Email,
+                            contentDescription = "Email icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     ),
                     value = emailInput,
                     onValueChanged = { emailInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
                 LoginField(
                     label = "Password",
-                    leadingIcon = R.drawable.lock,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = appIcons.Lock,
+                            contentDescription = "Padlock icon"
+                        )
+                    },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Send
                     ),
                     value = passInput,
                     onValueChanged = { passInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
                 Button(
@@ -190,7 +208,7 @@ fun GreetingLogin( modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
 @Composable
 fun LoginField(
     label: String,
-    @DrawableRes leadingIcon: Int,
+    leadingIcon: @Composable (() -> Unit)?,
     keyboardOptions: KeyboardOptions,
     value: String,
     modifier: Modifier = Modifier,
@@ -199,7 +217,7 @@ fun LoginField(
     TextField(
         value = value,
         singleLine = true,
-        leadingIcon = {Icon(painter = painterResource(id = leadingIcon), null)},
+        leadingIcon = leadingIcon,
         modifier = modifier,
         onValueChange = onValueChanged,
         label = {Text(label)},
