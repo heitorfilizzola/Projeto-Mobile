@@ -1,6 +1,6 @@
-package com.filizzola.projeto_mobile
+package com.filizzola.projeto_mobile.ui
 
-import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
@@ -31,18 +30,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.filizzola.projeto_mobile.R
+
 
 @Composable
-fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
-    var usernameInput by remember { mutableStateOf("") }
+fun bgImage(modifier: Modifier = Modifier) {
+    val image = painterResource(R.drawable.login_pg_bg)
+    Image(
+        painter = image,
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
+    )
+}
+
+@Composable
+fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
     var emailInput by remember { mutableStateOf("") }
-    var passInput by remember { mutableStateOf("")}
-    var passConfirmInput by remember { mutableStateOf("") }
+    var passInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
 
     val appIcons = Icons.Outlined
@@ -59,10 +69,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
             .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
+
+
         Surface(
             color = bgColor,
             modifier = Modifier
-                .fillMaxHeight(0.75f)
+                .fillMaxHeight(0.55f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
@@ -76,27 +88,10 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = "Register",
+                    text = "NoteSync",
                     modifier = modifier
                         .padding(bottom = 32.dp, top = 32.dp),
                     fontSize = 30.sp
-                )
-
-                RegisterField(
-                    label = "Username",
-                    leadingIcon = {
-                        Icon(
-                            imageVector = appIcons.AccountCircle,
-                            contentDescription = "Email icon"
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Next
-                    ),
-                    value = usernameInput,
-                    onValueChanged = { usernameInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
                 LoginField(
@@ -113,10 +108,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                     ),
                     value = emailInput,
                     onValueChanged = { emailInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
-                RegisterField(
+                LoginField(
                     label = "Password",
                     leadingIcon = {
                         Icon(
@@ -130,54 +127,47 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                     ),
                     value = passInput,
                     onValueChanged = { passInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
-                )
-
-                RegisterField(
-                    label = "Confirm Password",
-                    leadingIcon = {
-                        Icon(
-                            imageVector = appIcons.Lock,
-                            contentDescription = "Padlock icon"
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Send
-                    ),
-                    value = passConfirmInput,
-                    onValueChanged = { passConfirmInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
                 Button(
-                    onClick = onRegisterClick,
+                    onClick = onLoginClick,
                     modifier = modifier
-                        .padding(16.dp)
+                        .padding(bottom = 16.dp)
                 ) {
-                    Text(text = "Register", fontSize = 24.sp)
+                    Text(text = "Login", fontSize = 24.sp)
                 }
             }
         }
     }
 }
 
+//@Preview(showBackground = true)
+//@Composable
+//fun GreetingPreview() {
+//    ProjetoMobileTheme {
+//        GreetingLogin()
+//    }
+//}
+
 @Composable
-fun RegisterField(
+fun LoginField(
     label: String,
     leadingIcon: @Composable (() -> Unit)?,
     keyboardOptions: KeyboardOptions,
     value: String,
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit
-){
+) {
     TextField(
         value = value,
         singleLine = true,
         leadingIcon = leadingIcon,
         modifier = modifier,
         onValueChange = onValueChanged,
-        label = {Text(label)},
+        label = { Text(label) },
         keyboardOptions = keyboardOptions
     )
 }
