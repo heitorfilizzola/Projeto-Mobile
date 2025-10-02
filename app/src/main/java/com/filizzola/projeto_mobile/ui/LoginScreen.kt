@@ -50,7 +50,7 @@ fun bgImage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
+fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onRegPgClick: () -> Unit) {
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
@@ -138,6 +138,16 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
                         .padding(bottom = 16.dp)
                 ) {
                     Text(text = "Login", fontSize = 24.sp)
+                }
+
+
+                Button(
+                    onClick = onRegPgClick
+                ) {
+                    Text(
+                        text = "erg",
+                        fontSize = 16.sp
+                    )
                 }
             }
         }

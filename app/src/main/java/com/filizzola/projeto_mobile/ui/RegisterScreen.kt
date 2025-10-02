@@ -1,5 +1,6 @@
 package com.filizzola.projeto_mobile.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ArrowBackIosNew
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Button
@@ -30,18 +32,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.filizzola.projeto_mobile.data.UserRepository
+import java.io.File
 
 @Composable
-fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
+fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, onLoginBtnClick: () -> Unit) {
     var usernameInput by remember { mutableStateOf("") }
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("")}
     var passConfirmInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
+
+    val context = LocalContext.current
 
     val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
@@ -73,6 +81,14 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Button(
+                    onClick = onLoginBtnClick
+                ) {
+                    Icon(
+                        imageVector = appIcons.ArrowBackIosNew,
+                        contentDescription = "Return Login page button"
+                    )
+                }
                 Text(
                     text = "Register",
                     modifier = modifier
@@ -124,7 +140,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                     },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Send
+                        imeAction = ImeAction.Next
                     ),
                     value = passInput,
                     onValueChanged = { passInput = it },
@@ -149,9 +165,32 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit) {
                 )
 
                 Button(
-                    onClick = onRegisterClick,
-                    modifier = modifier
-                        .padding(16.dp)
+                    onClick = {
+                        // Validação dos campos de entrada
+                        val areFieldsBlank = usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
+                        val doPasswordsMatch = passInput == passConfirmInput
+
+                        if (!doPasswordsMatch) {
+                            Toast.makeText(context, "As senhas não conferem!", Toast.LENGTH_SHORT).show()
+                        } else if (areFieldsBlank) {
+                            Toast.makeText(context, "Por favor, preencha todos os campos.", Toast.LENGTH_SHORT).show()
+                        } else {
+                            //  Se a validação passar, cria o usuário
+                            UserRepository.createUser(
+                                newUsername = usernameInput,
+                                newEmail = emailInput,
+                                newPassword = passInput
+                            )
+
+                            // Salva lista atualizada no arquivo
+                            val userFile = File(context.filesDir, "users.json")
+                            UserRepository.saveUsersToFile(userFile)
+
+                            Toast.makeText(context, "Usuário registrado com sucesso!", Toast.LENGTH_SHORT).show()
+                            onRegisterClick() // Chama a função de navegação/callback
+                        }
+                    },
+                    modifier = modifier.padding(16.dp)
                 ) {
                     Text(text = "Register", fontSize = 24.sp)
                 }
