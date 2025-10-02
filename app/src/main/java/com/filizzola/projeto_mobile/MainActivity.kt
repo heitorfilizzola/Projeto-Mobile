@@ -38,7 +38,9 @@ class MainActivity : ComponentActivity() {
                                     onRegPgClick = {
                                         navController.navigate("register")
                                     },
-                                    onLoginClick = {}
+                                    onLoginClick = {
+                                        navController.navigate("register")
+                                    }
                                 )
                             }
 
