@@ -2,6 +2,7 @@ package com.filizzola.projeto_mobile.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,8 +33,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.filizzola.projeto_mobile.R
@@ -50,7 +56,7 @@ fun bgImage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
+fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onRegPgClick: () -> Unit) {
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("") }
     var borderGray = Color(0xFFCACACA)
@@ -70,11 +76,10 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
 
-
         Surface(
             color = bgColor,
             modifier = Modifier
-                .fillMaxHeight(0.55f)
+                .fillMaxHeight(0.60f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
@@ -130,6 +135,23 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .fillMaxWidth()
+                )
+
+                Text(
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .clickable { onRegPgClick() },
+                    text = buildAnnotatedString {
+                        append("Não tem uma conta? ")
+                        withStyle(
+                            style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
+                            append("Registre-se")
+                        }
+                    }
                 )
 
                 Button(

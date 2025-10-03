@@ -35,6 +35,9 @@ class MainActivity : ComponentActivity() {
                             composable("login") {
                                 GreetingLogin(
                                     modifier = Modifier.padding(innerPadding),
+                                    onRegPgClick = {
+                                        navController.navigate("register")
+                                    },
                                     onLoginClick = {
                                         navController.navigate("register")
                                     }
@@ -45,6 +48,9 @@ class MainActivity : ComponentActivity() {
                                 RegisterScreen(
                                     modifier = Modifier.padding(innerPadding),
                                     onRegisterClick = {
+                                        navController.navigate("login")
+                                    },
+                                    onLoginBtnClick = {
                                         navController.navigate("login")
                                     }
                                 )
