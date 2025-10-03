@@ -1,5 +1,6 @@
 package com.filizzola.projeto_mobile.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,42 +33,57 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.filizzola.projeto_mobile.R
+import com.filizzola.projeto_mobile.data.User
+import com.filizzola.projeto_mobile.data.UserRepository
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 
-
+/**
+ * Composable para exibir a imagem de fundo da tela.
+ */
 @Composable
 fun bgImage(modifier: Modifier = Modifier) {
-    val image = painterResource(R.drawable.login_pg_bg)
     Image(
-        painter = image,
+        painter = painterResource(R.drawable.login_pg_bg),
         contentDescription = null,
         contentScale = ContentScale.Crop,
+        modifier = modifier.fillMaxSize()
     )
 }
 
+/**
+ * A tela principal de Login.
+ * @param onLoginSuccess Callback executado quando o login é bem-sucedido, passando o usuário logado.
+ * @param onNavigateToRegister Callback executado para navegar para a tela de registro.
+ */
 @Composable
-fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onRegPgClick: () -> Unit) {
+fun GreetingLogin(
+    modifier: Modifier = Modifier,
+    onLoginSuccess: (User) -> Unit,
+    onNavigateToRegister: () -> Unit
+) {
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("") }
-    var borderGray = Color(0xFFCACACA)
+    val borderGray = Color(0xFFCACACA)
 
+    val context = LocalContext.current
     val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
 
-    bgImage(
-        modifier = Modifier
-            .fillMaxSize()
-    )
+    bgImage()
 
     Box(
         modifier = Modifier
@@ -75,7 +91,6 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onReg
             .fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-
         Surface(
             color = bgColor,
             modifier = Modifier
@@ -94,53 +109,59 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onReg
             ) {
                 Text(
                     text = "NoteSync",
-                    modifier = modifier
-                        .padding(bottom = 32.dp, top = 32.dp),
+                    modifier = modifier.padding(bottom = 32.dp, top = 32.dp),
                     fontSize = 30.sp
                 )
 
                 LoginField(
                     label = "E-Mail",
-                    leadingIcon = {
-                        Icon(
-                            imageVector = appIcons.Email,
-                            contentDescription = "Email icon"
-                        )
-                    },
+                    leadingIcon = { Icon(imageVector = appIcons.Email, contentDescription = "Email icon") },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     ),
                     value = emailInput,
                     onValueChanged = { emailInput = it },
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .fillMaxWidth()
+                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
                 LoginField(
                     label = "Password",
-                    leadingIcon = {
-                        Icon(
-                            imageVector = appIcons.Lock,
-                            contentDescription = "Padlock icon"
-                        )
-                    },
+                    leadingIcon = { Icon(imageVector = appIcons.Lock, contentDescription = "Padlock icon") },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Send
                     ),
                     value = passInput,
                     onValueChanged = { passInput = it },
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .fillMaxWidth()
+                    isPassword = true, // Esconde o texto da senha
+                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
+                Button(
+                    onClick = {
+                        if (emailInput.isBlank() || passInput.isBlank()) {
+                            Toast.makeText(context, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val loggedInUser = UserRepository.login(emailInput, passInput)
+                            if (loggedInUser != null) {
+                                Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
+                                onLoginSuccess(loggedInUser)
+                            } else {
+                                Toast.makeText(context, "Email ou senha incorretos.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text(text = "Login", fontSize = 24.sp)
+                }
+
+                // Texto clicável para navegar para a tela de registro
                 Text(
                     modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .clickable { onRegPgClick() },
+                        .padding(top = 24.dp)
+                        .clickable { onNavigateToRegister() }, // Ação de clique
                     text = buildAnnotatedString {
                         append("Não tem uma conta? ")
                         withStyle(
@@ -153,35 +174,24 @@ fun GreetingLogin(modifier: Modifier = Modifier, onLoginClick: () -> Unit, onReg
                         }
                     }
                 )
-
-                Button(
-                    onClick = onLoginClick,
-                    modifier = modifier
-                        .padding(bottom = 16.dp)
-                ) {
-                    Text(text = "Login", fontSize = 24.sp)
-                }
             }
         }
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    ProjetoMobileTheme {
-//        GreetingLogin()
-//    }
-//}
-
+/**
+ * Um campo de texto customizado para a tela de login.
+ * @param isPassword Se verdadeiro, o texto digitado será mascarado.
+ */
 @Composable
 fun LoginField(
     label: String,
     leadingIcon: @Composable (() -> Unit)?,
     keyboardOptions: KeyboardOptions,
     value: String,
+    onValueChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
-    onValueChanged: (String) -> Unit
+    isPassword: Boolean = false
 ) {
     TextField(
         value = value,
@@ -190,6 +200,18 @@ fun LoginField(
         modifier = modifier,
         onValueChange = onValueChanged,
         label = { Text(label) },
-        keyboardOptions = keyboardOptions
+        keyboardOptions = keyboardOptions,
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun GreetingPreview() {
+    ProjetoMobileTheme {
+        GreetingLogin(
+            onLoginSuccess = {},
+            onNavigateToRegister = {}
+        )
+    }
 }

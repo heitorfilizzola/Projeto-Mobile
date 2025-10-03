@@ -17,6 +17,29 @@ object UserRepository {
     val allUsers: MutableList<User> = mutableListOf()
     private val gson = Gson()
 
+    fun findUserByEmal(email: String): User? {
+        return allUsers.find {it.email.equals(email, ignoreCase = true)}
+    }
+
+    fun login(email: String, password: String): User? {
+        val loginTag = "LoginProcess"
+
+        val user = findUserByEmal(email)
+
+        if (user == null) {
+            Log.e(loginTag, "Login Falhou, Usuario com email $email nao encontrado")
+            return null
+        }
+
+        if (password == user.passwordHash){
+            Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
+            return user
+        } else {
+            Log.d(loginTag, "Erro no login para o usuario: ${user.username} (${user.id})")
+            return null
+        }
+    }
+
     fun createUser(newUsername: String, newEmail: String, newPassword: String) {
         val tag = "UserAdded"
 

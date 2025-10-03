@@ -13,6 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.filizzola.projeto_mobile.ui.GreetingLogin
+import com.filizzola.projeto_mobile.ui.MinhasTarefasApp
 import com.filizzola.projeto_mobile.ui.RegisterScreen
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 
@@ -32,17 +33,28 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             startDestination = "login"
                         ) {
+
                             composable("login") {
                                 GreetingLogin(
                                     modifier = Modifier.padding(innerPadding),
-                                    onRegPgClick = {
+
+                                    // TROQUE onRegPgClick POR onNavigateToRegister
+                                    onNavigateToRegister = {
                                         navController.navigate("register")
                                     },
-                                    onLoginClick = {
-                                        navController.navigate("register")
+
+                                    // TROQUE onLogPgTask POR onLoginSuccess
+                                    // E adicione o parâmetro 'user' que a função agora espera
+                                    onLoginSuccess = { user ->
+                                        // O 'user' é o objeto do usuário que logou com sucesso
+                                        navController.navigate("tasks")
                                     }
                                 )
                             }
+                            composable(route = "tasks") {
+                                MinhasTarefasApp()
+                            }
+
 
                             composable("register") {
                                 RegisterScreen(
