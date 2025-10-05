@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +26,8 @@ import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.scale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
@@ -34,7 +37,7 @@ fun TaskListScreen(
     onDeleteTask: (taskId: String) -> Unit,
     onToggleTaskStatus: (task: Tarefa) -> Unit
 ) {
-    var telaAtual by remember { mutableStateOf("A fazer") }
+    var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val user = UserRepository.allUsers.find { it.id == userId }
     val tarefas by remember(user?.uTaskList) {
@@ -50,7 +53,16 @@ fun TaskListScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha),
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
-                title = { Text("NoteSync", textAlign = TextAlign.Center) },
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ){
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.Logout, contentDescription = "LogOut")
+                    }
+                    Text("NoteSync", textAlign = TextAlign.Center)}
+                        },
                 scrollBehavior = scrollBehavior
             )
         },
@@ -338,21 +350,29 @@ fun CategoriaSection(
                     state = dismissState,
                     // Define o conteúdo que aparece por trás do item
                     backgroundContent = {
-                        val color = when (dismissState.dismissDirection) {
-                            SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde para "Feito"
-                            SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho para "Apagar"
-                            else -> Color.Transparent
-                        }
-                        val icon = when (dismissState.dismissDirection) {
+                        val direction = dismissState.dismissDirection ?: return@SwipeToDismissBox
+                        val color by animateColorAsState(
+                            when (direction) {
+                                SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde
+                                SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho
+                                SwipeToDismissBoxValue.Settled -> Color.Transparent
+                            }, label = "color_animation"
+                        )
+                        val icon = when (direction) {
                             SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Done
                             SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-                            else -> null
+                            SwipeToDismissBoxValue.Settled -> null
                         }
-                        val alignment = when (dismissState.dismissDirection) {
+                        val alignment = when (direction) {
                             SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
                             SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                            else -> Alignment.Center
+                            SwipeToDismissBoxValue.Settled -> Alignment.Center
                         }
+
+                        val scale by animateFloatAsState(
+                            if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
+                            label = "scale_animation"
+                        )
 
                         Box(
                             modifier = Modifier

@@ -8,9 +8,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -52,6 +55,8 @@ import com.filizzola.projeto_mobile.R
 import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 /**
  * Composable para exibir a imagem de fundo da tela.
@@ -87,13 +92,16 @@ fun GreetingLogin(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .fillMaxWidth(),
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .fillMaxWidth()
+            .imePadding(),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             color = bgColor,
             modifier = Modifier
-                .fillMaxHeight(0.60f)
+//                .fillMaxHeight(0.60f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
@@ -102,9 +110,10 @@ fun GreetingLogin(
             Column(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(horizontal = 40.dp),
+                    .padding(horizontal = 40.dp)
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+//                verticalArrangement = Arrangement.Center
             ) {
 
                 Text(
@@ -158,26 +167,29 @@ fun GreetingLogin(
                     Text(text = "Login", fontSize = 24.sp)
                 }
 
-                Text(
-                    modifier = Modifier
-                        .padding(top = 24.dp)
-                        .clickable { onNavigateToRegister() }, // Ação de clique
-                    text = buildAnnotatedString {
-                        append("Não tem uma conta? ")
-                        withStyle(
-                            style = SpanStyle(
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        ) {
-                            append("Registre-se")
+                    Text("Não tem uma conta? ",
+                        modifier = Modifier.padding(top = 24.dp)) // <-- Texto 1
+                    Text(                     // <-- Texto 2
+                        modifier = Modifier
+                            .clickable { onNavigateToRegister() }
+                            .padding(bottom = 32.dp),
+                        text = buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append("Registre-se")
+                            }
                         }
-                    }
-                )
+                    )
+
+                }
             }
         }
     }
-}
+
 
 
 @Composable

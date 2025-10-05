@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
@@ -68,21 +69,23 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .imePadding(),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             color = bgColor,
             modifier = Modifier
-                .fillMaxHeight(0.76f)
+//                .fillMaxHeight(0.76f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
             shape = RoundedCornerShape(65.dp),
         ) {
             Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState()),
+                ) {
                 IconButton(
                     onClick = onLoginBtnClick,
                     modifier = Modifier

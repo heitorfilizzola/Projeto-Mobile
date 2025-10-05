@@ -27,12 +27,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             ProjetoMobileTheme {
                 val navController = rememberNavController()
-
-                // O estado currentUser pode ser removido, pois não está sendo usado
-                // de forma reativa pela TaskListScreen.
-                // var currentUser by remember { mutableStateOf<User?>(null) }
-
-                // ADICIONADO: Estado para forçar a recomposição da lista de tarefas.
                 var triggerRecomposition by remember { mutableStateOf(0) }
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
