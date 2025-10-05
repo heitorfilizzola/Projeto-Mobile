@@ -25,7 +25,8 @@ import com.filizzola.projeto_mobile.data.UserRepository
 @Composable
 fun TaskListScreen(
     navController: NavController,
-    userId: String
+    userId: String,
+    onDeleteTask: (taskId: String) -> Unit
 ) {
     var telaAtual by remember { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -107,7 +108,7 @@ fun TaskListScreen(
                     )
                 ) {
                     item {
-                        CategoriaSection(telaAlvo, tarefasFiltradas)
+                        CategoriaSection(telaAlvo, tarefasFiltradas, navController, onDeleteTask)
                     }
                 }
             }
@@ -166,9 +167,69 @@ fun AddTaskScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditTaskScreen(
+    navController: NavController,
+    onEditTask: (Tarefa) -> Unit,
+    userId: String,
+    taskId: String?
+) {
+    val user = UserRepository.allUsers.find { it.id == userId }
+    val taskToEdit = user?.uTaskList?.find { it.id == taskId }
+
+    var titulo by remember { mutableStateOf(taskToEdit?.titulo ?: "") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Editar Tarefa") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Voltar")
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            OutlinedTextField(
+                value = titulo,
+                onValueChange = { titulo = it },
+                label = { Text("Título da Tarefa") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = {
+                    if (titulo.isNotBlank() && taskToEdit != null) {
+                        val updatedTask = taskToEdit.copy(titulo = titulo)
+                        onEditTask(updatedTask)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = titulo.isNotBlank()
+            ) {
+                Text("Salvar Alterações")
+            }
+        }
+    }
+}
+
 
 @Composable
-fun CategoriaSection(titulo: String, tarefas: List<Tarefa>) {
+fun CategoriaSection(
+    titulo: String,
+    tarefas: List<Tarefa>,
+    navController: NavController,
+    onDeleteTask: (taskId: String) -> Unit
+) {
     if (tarefas.isNotEmpty()) {
         Text(
             text = titulo,
@@ -189,10 +250,12 @@ fun CategoriaSection(titulo: String, tarefas: List<Tarefa>) {
                     ) {
                         Text(tarefa.titulo)
                         Row {
-                            IconButton(onClick = { /* editar */ }) {
+                            IconButton(onClick = {
+                                navController.navigate("edit_task/${tarefa.userId}/${tarefa.id}")
+                            }) {
                                 Icon(Icons.Filled.Edit, "Editar", tint = Color.Blue)
                             }
-                            IconButton(onClick = { /* excluir */ }) {
+                            IconButton(onClick = { onDeleteTask(tarefa.id) }) {
                                 Icon(Icons.Filled.Delete, "Excluir", tint = Color.Red)
                             }
                         }

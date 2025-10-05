@@ -23,6 +23,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -203,7 +204,6 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                                     newPassword = passInput
                                 )
 
-                                // Salva lista atualizada no arquivo
                                 val userFile = File(context.filesDir, "users.json")
                                 UserRepository.saveUsersToFile(userFile)
 
@@ -212,7 +212,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                                     "Usuário registrado com sucesso!",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                onRegisterClick() // Chama a função de navegação/callback
+                                onRegisterClick()
                             }
                         },
                         modifier = modifier.padding(16.dp)
@@ -234,7 +234,7 @@ fun RegisterField(
     modifier: Modifier = Modifier,
     onValueChanged: (String) -> Unit
 ){
-    TextField(
+    OutlinedTextField(
         value = value,
         singleLine = true,
         leadingIcon = leadingIcon,

@@ -1,7 +1,6 @@
 package com.filizzola.projeto_mobile
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,8 +18,6 @@ import androidx.navigation.navArgument
 import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.*
-import com.filizzola.projeto_mobile.ui.GreetingLogin
-import com.filizzola.projeto_mobile.ui.RegisterScreen
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 
 class MainActivity : ComponentActivity() {
@@ -64,7 +61,11 @@ class MainActivity : ComponentActivity() {
                                 if (userId != null) {
                                     TaskListScreen(
                                         navController = navController,
-                                        userId = userId
+                                        userId = userId,
+                                        onDeleteTask = { taskIdToDelete ->
+                                            UserRepository.deleteTaskForUser(userId, taskIdToDelete)
+                                            currentUser = currentUser?.copy()
+                                        }
                                     )
                                 }
                             }
@@ -79,10 +80,31 @@ class MainActivity : ComponentActivity() {
                                         navController = navController,
                                         onAddTask = { novaTarefa ->
                                             UserRepository.addTaskToUser(userId, novaTarefa)
-                                            Log.d("newTask", "Tarefa ${novaTarefa.id} adicionada ao usuario $userId")
                                             navController.popBackStack()
                                         },
                                         userId = userId
+                                    )
+                                }
+                            }
+
+                            composable(
+                                "edit_task/{userId}/{taskId}",
+                                arguments = listOf(
+                                    navArgument("userId") { type = NavType.StringType },
+                                    navArgument("taskId") { type = NavType.StringType }
+                                )
+                            ) { backStackEntry ->
+                                val userId = backStackEntry.arguments?.getString("userId")
+                                val taskId = backStackEntry.arguments?.getString("taskId")
+                                if (userId != null) {
+                                    EditTaskScreen(
+                                        navController = navController,
+                                        onEditTask = { tarefaAtualizada ->
+                                            UserRepository.updateTaskForUser(userId, tarefaAtualizada)
+                                            navController.popBackStack()
+                                        },
+                                        userId = userId,
+                                        taskId = taskId
                                     )
                                 }
                             }

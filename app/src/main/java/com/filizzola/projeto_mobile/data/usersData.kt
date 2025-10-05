@@ -65,6 +65,24 @@ object UserRepository {
         user?.uTaskList?.add(task)
     }
 
+    fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
+        val user = allUsers.find { it.id == userId }
+        user?.let {
+            val taskIndex = it.uTaskList.indexOfFirst { task -> task.id == updatedTask.id }
+            if (taskIndex != -1) {
+                it.uTaskList[taskIndex] = updatedTask
+                Log.d("TaskUpdate", "Tarefa ${updatedTask.id} atualizada para o usuário $userId")
+            }
+        }
+    }
+
+    fun deleteTaskForUser(userId: String, taskId: String) {
+        val user = allUsers.find { it.id == userId }
+        user?.uTaskList?.removeAll { it.id == taskId }
+        Log.d("TaskDelete", "Tarefa $taskId deletada para o usuário $userId")
+    }
+
+
     fun saveUsersToFile(file: File) {
         val jsonString = gson.toJson(allUsers)
         file.writeText(jsonString)
