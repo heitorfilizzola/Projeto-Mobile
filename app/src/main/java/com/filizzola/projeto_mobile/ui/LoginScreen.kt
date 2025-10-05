@@ -109,13 +109,13 @@ fun GreetingLogin(
                 verticalArrangement = Arrangement.Center
             ) {
 
-//                Button(
-//                    onClick = onClickTaski
-//                ) {
-//                    Text(
-//                        "oi"
-//                    )
-//                }
+                Button(
+                    onClick = onClickTaski
+                ) {
+                    Text(
+                        "oi"
+                    )
+                }
 
                 Text(
                     text = "NoteSync",
