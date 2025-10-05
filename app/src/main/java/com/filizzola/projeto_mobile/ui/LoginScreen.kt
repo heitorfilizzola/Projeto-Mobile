@@ -64,11 +64,7 @@ fun bgImage(modifier: Modifier = Modifier) {
     )
 }
 
-/**
- * A tela principal de Login.
- * @param onLoginSuccess Callback executado quando o login é bem-sucedido, passando o usuário logado.
- * @param onNavigateToRegister Callback executado para navegar para a tela de registro.
- */
+
 @Composable
 fun GreetingLogin(
     modifier: Modifier = Modifier,
@@ -109,14 +105,6 @@ fun GreetingLogin(
                 verticalArrangement = Arrangement.Center
             ) {
 
-                Button(
-                    onClick = onClickTaski
-                ) {
-                    Text(
-                        "oi"
-                    )
-                }
-
                 Text(
                     text = "NoteSync",
                     modifier = modifier.padding(bottom = 32.dp, top = 32.dp),
@@ -144,7 +132,7 @@ fun GreetingLogin(
                     ),
                     value = passInput,
                     onValueChanged = { passInput = it },
-                    isPassword = true, // Esconde o texto da senha
+                    isPassword = true,
                     modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
                 )
 
@@ -167,7 +155,6 @@ fun GreetingLogin(
                     Text(text = "Login", fontSize = 24.sp)
                 }
 
-                // Texto clicável para navegar para a tela de registro
                 Text(
                     modifier = Modifier
                         .padding(top = 24.dp)
@@ -189,10 +176,7 @@ fun GreetingLogin(
     }
 }
 
-/**
- * Um campo de texto customizado para a tela de login.
- * @param isPassword Se verdadeiro, o texto digitado será mascarado.
- */
+
 @Composable
 fun LoginField(
     label: String,
