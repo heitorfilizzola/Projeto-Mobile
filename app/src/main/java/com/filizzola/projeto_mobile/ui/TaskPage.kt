@@ -16,22 +16,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.filizzola.projeto_mobile.data.Tarefa
 import com.filizzola.projeto_mobile.data.UserRepository
+import com.filizzola.projeto_mobile.data.User
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListScreen(
     navController: NavController,
     userId: String,
-    onDeleteTask: (taskId: String) -> Unit
+    onDeleteTask: (taskId: String) -> Unit,
+    onToggleTaskStatus: (task: Tarefa) -> Unit
 ) {
     var telaAtual by remember { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val user = UserRepository.allUsers.find { it.id == userId }
-    val tarefas = user?.uTaskList ?: emptyList()
+    val tarefas by remember(user?.uTaskList) {
+        derivedStateOf { user?.uTaskList ?: emptyList() }
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -61,19 +69,44 @@ fun TaskListScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Button(onClick = { telaAtual = "A fazer" }, modifier = Modifier.fillMaxHeight(0.65f)) {
-                            Icon(Icons.Default.WorkHistory, "A fazer")
+                        Button(onClick = { telaAtual = "A fazer" }, modifier = Modifier.fillMaxHeight(0.7f)) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.WorkHistory, "A fazer")
+                                Text(
+                                    text = "A fazer",
+                                    fontSize = 8.sp,
+                                )
+                            }
                         }
 
-                        Button(
-                            onClick = { navController.navigate("add_task/$userId") },
-                            modifier = Modifier.fillMaxHeight(0.90f)
+
+                            Button(
+                                onClick = { navController.navigate("add_task/$userId") },
+                                modifier = Modifier.fillMaxHeight(0.90f)
+                            ){
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(Icons.Default.Add, "Adicionar Tarefa")
+                            Text(
+                                text = "Criar",
+                                fontSize = 11.sp,
+                            )
+                            }
                         }
 
-                        Button(onClick = { telaAtual = "Feito" }, modifier = Modifier.fillMaxHeight(0.65f)) {
-                            Icon(Icons.Default.Done, "Feito")
+                        Button(onClick = { telaAtual = "Feito" }, modifier = Modifier.fillMaxHeight(0.7f)) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(Icons.Default.Done, "Feito")
+                                Text(
+                                    text = "Feito",
+                                    fontSize = 8.sp,
+                                )
+                            }
                         }
                     }
                 }
@@ -101,18 +134,60 @@ fun TaskListScreen(
             ) { telaAlvo ->
                 val tarefasFiltradas = tarefas.filter { it.status == telaAlvo }
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
                     contentPadding = PaddingValues(
                         top = innerPadding.calculateTopPadding(),
                         bottom = innerPadding.calculateBottomPadding() + 80.dp
                     )
                 ) {
                     item {
-                        CategoriaSection(telaAlvo, tarefasFiltradas, navController, onDeleteTask)
+                        CategoriaSection(
+                            titulo = telaAlvo,
+                            tarefas = tarefasFiltradas,
+                            navController = navController,
+                            onDeleteTask = onDeleteTask,
+                            onToggleTaskStatus = onToggleTaskStatus
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, name = "Tela de Lista de Tarefas")
+@Composable
+fun TaskListScreenPreview() {
+    val previewTasks = mutableListOf(
+        Tarefa(titulo = "Comprar pão e leite", status = "A fazer", userId = "previewUser"),
+        Tarefa(titulo = "Terminar relatório do projeto", status = "A fazer", userId = "previewUser"),
+        Tarefa(titulo = "Ir à academia", status = "Feito", userId = "previewUser")
+    )
+    // Corrigindo a criação do User para usar 'name' e 'password'
+    val previewUser = User(
+        id = "previewUser",
+        username = "Usuário Teste",
+        email = "preview@email.com",
+        passwordHash = "123",
+        uTaskList = previewTasks
+    )
+
+    if (UserRepository.allUsers.find { it.id == "previewUser" } == null) {
+        UserRepository.allUsers.add(previewUser)
+    }
+
+    val navController = rememberNavController()
+
+    ProjetoMobileTheme {
+        // Chamada corrigida, sem os parâmetros que causavam o erro
+        TaskListScreen(
+            navController = navController,
+            userId = "previewUser",
+            onDeleteTask = { },
+            onToggleTaskStatus = { }
+        )
     }
 }
 
@@ -223,12 +298,14 @@ fun EditTaskScreen(
 }
 
 
+
 @Composable
 fun CategoriaSection(
     titulo: String,
     tarefas: List<Tarefa>,
     navController: NavController,
-    onDeleteTask: (taskId: String) -> Unit
+    onDeleteTask: (taskId: String) -> Unit,
+    onToggleTaskStatus: (task: Tarefa) -> Unit
 ) {
     if (tarefas.isNotEmpty()) {
         Text(
@@ -237,26 +314,78 @@ fun CategoriaSection(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
         )
-        Column {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             tarefas.forEach { tarefa ->
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    shape = MaterialTheme.shapes.large
+                val dismissState = rememberSwipeToDismissBoxState(
+                    confirmValueChange = {
+                        when (it) {
+                            // Direita para a Esquerda -> Apagar
+                            SwipeToDismissBoxValue.EndToStart -> {
+                                onDeleteTask(tarefa.id)
+                                true // Confirma a ação, o item será removido
+                            }
+                            // Esquerda para a Direita -> Marcar como feito/a fazer
+                            SwipeToDismissBoxValue.StartToEnd -> {
+                                onToggleTaskStatus(tarefa)
+                                true // Confirma a ação, o item mudará de lista
+                            }
+                            SwipeToDismissBoxValue.Settled -> false // Nenhuma ação
+                        }
+                    }
+                )
+
+                SwipeToDismissBox(
+                    state = dismissState,
+                    // Define o conteúdo que aparece por trás do item
+                    backgroundContent = {
+                        val color = when (dismissState.dismissDirection) {
+                            SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde para "Feito"
+                            SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho para "Apagar"
+                            else -> Color.Transparent
+                        }
+                        val icon = when (dismissState.dismissDirection) {
+                            SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Done
+                            SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                            else -> null
+                        }
+                        val alignment = when (dismissState.dismissDirection) {
+                            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                            SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                            else -> Alignment.Center
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color, shape = MaterialTheme.shapes.large,)
+                                .padding(horizontal = 20.dp),
+                            contentAlignment = alignment
+                        ) {
+                            icon?.let {
+                                Icon(it, contentDescription = null, tint = Color.White)
+                            }
+                        }
+                    }
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    // Este é o conteúdo principal do item (o que o usuário vê normalmente)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        shape = MaterialTheme.shapes.large
                     ) {
-                        Text(tarefa.titulo)
-                        Row {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(tarefa.titulo)
+                            // Ícone de edição pode ser mantido ou removido, se preferir
                             IconButton(onClick = {
                                 navController.navigate("edit_task/${tarefa.userId}/${tarefa.id}")
                             }) {
-                                Icon(Icons.Filled.Edit, "Editar", tint = Color.Blue)
-                            }
-                            IconButton(onClick = { onDeleteTask(tarefa.id) }) {
-                                Icon(Icons.Filled.Delete, "Excluir", tint = Color.Red)
+                                Icon(Icons.Filled.Edit, "Editar", tint = Color.Gray)
                             }
                         }
                     }
@@ -265,3 +394,5 @@ fun CategoriaSection(
         }
     }
 }
+
+

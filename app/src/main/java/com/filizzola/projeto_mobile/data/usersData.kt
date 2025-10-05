@@ -40,6 +40,23 @@ object UserRepository {
         }
     }
 
+    fun toggleTaskStatusForUser(userId: String, taskId: String) {
+        val userIndex = allUsers.indexOfFirst { it.id == userId }
+        if (userIndex != -1) {
+            val user = allUsers[userIndex]
+            val taskIndex = user.uTaskList.indexOfFirst { it.id == taskId }
+            if (taskIndex != -1) {
+                val task = user.uTaskList[taskIndex]
+                val updatedTask = task.copy(
+                    status = if (task.status == "A fazer") "Feito" else "A fazer"
+                )
+                val newTaskList = user.uTaskList.toMutableList()
+                newTaskList[taskIndex] = updatedTask
+                allUsers[userIndex] = user.copy(uTaskList = newTaskList)
+            }
+        }
+    }
+
     fun createUser(newUsername: String, newEmail: String, newPassword: String) {
         if (newUsername.isNotBlank() && newEmail.isNotBlank() && newPassword.isNotBlank()) {
             val createTag = "Criado"

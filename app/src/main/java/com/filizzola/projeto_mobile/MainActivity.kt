@@ -28,7 +28,13 @@ class MainActivity : ComponentActivity() {
             ProjetoMobileTheme {
                 val navController = rememberNavController()
 
-                var currentUser by remember { mutableStateOf<User?>(null) }
+                // O estado currentUser pode ser removido, pois não está sendo usado
+                // de forma reativa pela TaskListScreen.
+                // var currentUser by remember { mutableStateOf<User?>(null) }
+
+                // ADICIONADO: Estado para forçar a recomposição da lista de tarefas.
+                var triggerRecomposition by remember { mutableStateOf(0) }
+
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Surface(modifier = Modifier.fillMaxSize()) {
                         NavHost(
@@ -40,13 +46,11 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(innerPadding),
                                     onNavigateToRegister = { navController.navigate("register") },
                                     onLoginSuccess = { user ->
-                                        currentUser = user
                                         navController.navigate("tasks/${user.id}")
                                     },
                                     onClickTaski = {
                                         if (UserRepository.allUsers.isNotEmpty()) {
                                             val user = UserRepository.allUsers.first()
-                                            currentUser = user
                                             navController.navigate("tasks/${user.id}")
                                         }
                                     }
@@ -59,14 +63,25 @@ class MainActivity : ComponentActivity() {
                             ) { backStackEntry ->
                                 val userId = backStackEntry.arguments?.getString("userId")
                                 if (userId != null) {
-                                    TaskListScreen(
-                                        navController = navController,
-                                        userId = userId,
-                                        onDeleteTask = { taskIdToDelete ->
-                                            UserRepository.deleteTaskForUser(userId, taskIdToDelete)
-                                            currentUser = currentUser?.copy()
-                                        }
-                                    )
+                                    // MODIFICADO: A chave `key` garante que o Composable seja
+                                    // recriado quando o `triggerRecomposition` mudar.
+                                    key(triggerRecomposition) {
+                                        TaskListScreen(
+                                            navController = navController,
+                                            userId = userId,
+                                            onDeleteTask = { taskIdToDelete ->
+                                                UserRepository.deleteTaskForUser(userId, taskIdToDelete)
+                                                // Altera o estado para forçar a atualização
+                                                triggerRecomposition++
+                                            },
+                                            // ADICIONADO: Passando a nova função de swipe
+                                            onToggleTaskStatus = { taskToToggle ->
+                                                UserRepository.toggleTaskStatusForUser(userId, taskToToggle.id)
+                                                // Altera o estado para forçar a atualização
+                                                triggerRecomposition++
+                                            }
+                                        )
+                                    }
                                 }
                             }
 
@@ -80,6 +95,8 @@ class MainActivity : ComponentActivity() {
                                         navController = navController,
                                         onAddTask = { novaTarefa ->
                                             UserRepository.addTaskToUser(userId, novaTarefa)
+                                            // Força a atualização da tela anterior ao voltar
+                                            triggerRecomposition++
                                             navController.popBackStack()
                                         },
                                         userId = userId
@@ -101,6 +118,8 @@ class MainActivity : ComponentActivity() {
                                         navController = navController,
                                         onEditTask = { tarefaAtualizada ->
                                             UserRepository.updateTaskForUser(userId, tarefaAtualizada)
+                                            // Força a atualização da tela anterior ao voltar
+                                            triggerRecomposition++
                                             navController.popBackStack()
                                         },
                                         userId = userId,
