@@ -5,13 +5,13 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
 import java.util.UUID
-import com.filizzola.projeto_mobile.data.Tarefa
+
 data class User(
     val id: String,
     val username: String,
     val email: String,
     val passwordHash: String,
-    val uTaskList: List<Tarefa>
+    val uTaskList: MutableList<Tarefa>
 )
 
 object UserRepository {
@@ -50,7 +50,7 @@ object UserRepository {
                 username = newUsername,
                 email = newEmail,
                 passwordHash = newPassword,
-                uTaskList = emptyList()
+                uTaskList = mutableListOf()
             )
 
             allUsers.add(newUser)
@@ -58,6 +58,11 @@ object UserRepository {
         } else {
             Log.e("CreationError", "Error: all inputs should be filled")
         }
+    }
+
+    fun addTaskToUser(userId: String, task: Tarefa) {
+        val user = allUsers.find { it.id == userId }
+        user?.uTaskList?.add(task)
     }
 
     fun saveUsersToFile(file: File) {

@@ -19,15 +19,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.filizzola.projeto_mobile.data.Tarefa
+import com.filizzola.projeto_mobile.data.UserRepository
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListScreen(
     navController: NavController,
-    tarefas: List<Tarefa>
+    userId: String
 ) {
     var telaAtual by remember { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val user = UserRepository.allUsers.find { it.id == userId }
+    val tarefas = user?.uTaskList ?: emptyList()
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -62,7 +65,7 @@ fun TaskListScreen(
                         }
 
                         Button(
-                            onClick = { navController.navigate("add_task") },
+                            onClick = { navController.navigate("add_task/$userId") },
                             modifier = Modifier.fillMaxHeight(0.90f)
                         ) {
                             Icon(Icons.Default.Add, "Adicionar Tarefa")
@@ -116,7 +119,8 @@ fun TaskListScreen(
 @Composable
 fun AddTaskScreen(
     onAddTask: (Tarefa) -> Unit,
-    navController: NavController
+    navController: NavController,
+    userId: String
 ) {
     var titulo by remember { mutableStateOf("") }
     val status = "A fazer"
@@ -150,7 +154,7 @@ fun AddTaskScreen(
             Button(
                 onClick = {
                     if (titulo.isNotBlank()) {
-                        onAddTask(Tarefa(titulo = titulo, status = status))
+                        onAddTask(Tarefa(titulo = titulo, status = status, userId = userId))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

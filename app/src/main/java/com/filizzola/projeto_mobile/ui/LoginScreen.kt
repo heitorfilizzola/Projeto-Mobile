@@ -1,5 +1,6 @@
 package com.filizzola.projeto_mobile.ui
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -144,6 +145,7 @@ fun GreetingLogin(
                             val loggedInUser = UserRepository.login(emailInput, passInput)
                             if (loggedInUser != null) {
                                 Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
+                                Log.d("loginDone", "Login com sucesso do usuario $loggedInUser")
                                 onLoginSuccess(loggedInUser)
                             } else {
                                 Toast.makeText(context, "Email ou senha incorretos.", Toast.LENGTH_SHORT).show()

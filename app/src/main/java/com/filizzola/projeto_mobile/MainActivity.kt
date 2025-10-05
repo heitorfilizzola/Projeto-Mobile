@@ -1,6 +1,7 @@
 package com.filizzola.projeto_mobile
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -10,9 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.*
@@ -41,44 +44,47 @@ class MainActivity : ComponentActivity() {
                                     onNavigateToRegister = { navController.navigate("register") },
                                     onLoginSuccess = { user ->
                                         currentUser = user
-                                        navController.navigate("tasks")
+                                        navController.navigate("tasks/${user.id}")
                                     },
                                     onClickTaski = {
                                         if (UserRepository.allUsers.isNotEmpty()) {
-                                            currentUser = UserRepository.allUsers.first()
-                                            navController.navigate("tasks")
+                                            val user = UserRepository.allUsers.first()
+                                            currentUser = user
+                                            navController.navigate("tasks/${user.id}")
                                         }
                                     }
                                 )
                             }
 
-                            composable(route = "tasks") {
-                                currentUser?.let { user ->
+                            composable(
+                                route = "tasks/{userId}",
+                                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                            ) { backStackEntry ->
+                                val userId = backStackEntry.arguments?.getString("userId")
+                                if (userId != null) {
                                     TaskListScreen(
                                         navController = navController,
-                                        tarefas = user.uTaskList
+                                        userId = userId
                                     )
                                 }
                             }
 
-                            composable(route = "add_task") {
-                                AddTaskScreen(
-                                    navController = navController,
-                                    onAddTask = { novaTarefa ->
-                                        currentUser?.let { user ->
-                                            val updatedTasks = user.uTaskList + novaTarefa
-                                            val updatedUser = user.copy(uTaskList = updatedTasks)
-
-                                            currentUser = updatedUser
-
-                                            val userIndex = UserRepository.allUsers.indexOfFirst { it.id == user.id }
-                                            if (userIndex != -1) {
-                                                UserRepository.allUsers[userIndex] = updatedUser
-                                            }
-                                        }
-                                        navController.popBackStack()
-                                    }
-                                )
+                            composable(
+                                "add_task/{userId}",
+                                arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                            ) { backStackEntry ->
+                                val userId = backStackEntry.arguments?.getString("userId")
+                                if (userId != null) {
+                                    AddTaskScreen(
+                                        navController = navController,
+                                        onAddTask = { novaTarefa ->
+                                            UserRepository.addTaskToUser(userId, novaTarefa)
+                                            Log.d("newTask", "Tarefa ${novaTarefa.id} adicionada ao usuario $userId")
+                                            navController.popBackStack()
+                                        },
+                                        userId = userId
+                                    )
+                                }
                             }
 
                             composable("register") {
