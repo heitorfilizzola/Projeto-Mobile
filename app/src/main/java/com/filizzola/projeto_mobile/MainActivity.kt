@@ -48,9 +48,16 @@ class MainActivity : ComponentActivity() {
                                     onLoginSuccess = { user ->
                                         // O 'user' é o objeto do usuário que logou com sucesso
                                         navController.navigate("tasks")
+                                    },
+
+                                    onClickTaski = {
+                                        navController.navigate("tasks")
                                     }
+
+
                                 )
                             }
+
                             composable(route = "tasks") {
                                 MinhasTarefasApp()
                             }

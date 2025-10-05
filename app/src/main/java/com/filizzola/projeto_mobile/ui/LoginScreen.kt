@@ -73,7 +73,8 @@ fun bgImage(modifier: Modifier = Modifier) {
 fun GreetingLogin(
     modifier: Modifier = Modifier,
     onLoginSuccess: (User) -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    onClickTaski: () -> Unit
 ) {
     var emailInput by remember { mutableStateOf("") }
     var passInput by remember { mutableStateOf("") }
@@ -107,6 +108,15 @@ fun GreetingLogin(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+
+//                Button(
+//                    onClick = onClickTaski
+//                ) {
+//                    Text(
+//                        "oi"
+//                    )
+//                }
+
                 Text(
                     text = "NoteSync",
                     modifier = modifier.padding(bottom = 32.dp, top = 32.dp),
@@ -211,7 +221,8 @@ fun GreetingPreview() {
     ProjetoMobileTheme {
         GreetingLogin(
             onLoginSuccess = {},
-            onNavigateToRegister = {}
+            onNavigateToRegister = {},
+            onClickTaski = {}
         )
     }
 }

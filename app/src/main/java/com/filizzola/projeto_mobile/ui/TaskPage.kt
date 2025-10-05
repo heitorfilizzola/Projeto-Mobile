@@ -1,23 +1,30 @@
 package com.filizzola.projeto_mobile.ui
 
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.WorkHistory
 import androidx.compose.material3.*
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 
 data class Tarefa(
     val titulo: String,
@@ -33,6 +40,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MinhasTarefasApp() {
     var tarefas by remember {
@@ -46,32 +54,72 @@ fun MinhasTarefasApp() {
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F172A)) // fundo escuro
-            .padding(16.dp),
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    var presses by remember { mutableIntStateOf(0) }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                colors = topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                ),
+                title = {
+                    Text(
+                        "NoteSync",
+                        textAlign = TextAlign.Center
+
+                        )
+                }
+            )
+        },
+        bottomBar = {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ) {
+                Row(
+                ) {
+                    Button(
+                        onClick = {}
+                    ) {
+                        Icon(
+                            Icons.Default.WorkHistory,
+                            contentDescription = "To Do"
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            tarefas = tarefas + Tarefa("Nova tarefa", "A fazer")
+                        },
+                        modifier = Modifier
+                            .fillMaxHeight(1f)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                    }
+                    Button(
+                        onClick = {}
+                    ) {
+                        Icon(
+                            Icons.Default.Done,
+                            contentDescription = "To Do"
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column (
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0F172A)) // fundo escuro
+                    .padding( innerPadding),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "Minhas Tarefas",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(8.dp)
-        )
-
-        Button(
-            onClick = {
-                tarefas = tarefas + Tarefa("Nova tarefa", "A fazer")
-            },
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text("+ Adicionar")
-        }
-
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding( 16.dp, 0.dp)
         ) {
             item {
                 CategoriaSection("A fazer", Color.Red, tarefas.filter { it.status == "A fazer" })
@@ -81,7 +129,7 @@ fun MinhasTarefasApp() {
             }
         }
     }
-}
+}}
 
 @Composable
 fun CategoriaSection(titulo: String, cor: Color, tarefas: List<Tarefa>) {
@@ -130,5 +178,13 @@ fun CategoriaSection(titulo: String, cor: Color, tarefas: List<Tarefa>) {
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun previewTasks() {
+    ProjetoMobileTheme {
+        MinhasTarefasApp()
     }
 }

@@ -42,7 +42,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.filizzola.projeto_mobile.data.UserRepository
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import java.io.File
+
 
 @Composable
 fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, onLoginBtnClick: () -> Unit) {
@@ -241,4 +243,17 @@ fun RegisterField(
         label = {Text(label)},
         keyboardOptions = keyboardOptions
     )
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun registerPreview() {
+    ProjetoMobileTheme {
+        RegisterScreen(
+            modifier = Modifier,
+            onRegisterClick = {},
+            onLoginBtnClick = {}
+        )
+    }
 }
