@@ -182,6 +182,8 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
 
                     Button(
                         onClick = {
+
+                            android.util.Log.d("RegisterScreen", "O BOTÃO DE REGISTRO FOI CLICADO!")
                             // Validação dos campos de entrada
                             val areFieldsBlank =
                                 usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
