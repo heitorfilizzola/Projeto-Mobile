@@ -190,34 +190,43 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                             val doPasswordsMatch = passInput == passConfirmInput
 
                             if (!doPasswordsMatch) {
+                                android.util.Log.e("RegisterScreen", "VALIDAÇÃO FALHOU: As senhas não conferem.")
                                 Toast.makeText(
                                     context,
                                     "As senhas não conferem!",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else if (areFieldsBlank) {
+                                android.util.Log.e("RegisterScreen", "VALIDAÇÃO FALHOU: Por favor, preencha todos os campos.")
                                 Toast.makeText(
                                     context,
                                     "Por favor, preencha todos os campos.",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
-                                //  Se a validação passar, cria o usuário
+                                android.util.Log.d("RegisterScreen", "VALIDAÇÃO OK! Chamando createUser...")
+
                                 UserRepository.createUser(
                                     newUsername = usernameInput,
                                     newEmail = emailInput,
-                                    newPassword = passInput
+                                    newPassword = passInput,
+                                    onSuccess = {
+                                        // ESTE CÓDIGO SÓ RODA QUANDO O FIREBASE CONFIRMA O SUCESSO
+                                        android.util.Log.d("RegisterScreen", "Callback de SUCESSO recebido do Firebase!")
+
+                                        val userFile = File(context.filesDir, "users.json")
+                                        UserRepository.saveUsersToFile(userFile)
+
+                                        Toast.makeText(context, "Usuário registrado com sucesso!", Toast.LENGTH_SHORT).show()
+                                        onRegisterClick()
+                                    },
+                                    onFailure = { exception ->
+                                        // ESTE CÓDIGO SÓ RODA QUANDO O FIREBASE CONFIRMA A FALHA
+                                        android.util.Log.e("RegisterScreen", "Callback de FALHA recebido: ", exception)
+                                        Toast.makeText(context, "Erro ao registrar. Tente novamente.", Toast.LENGTH_SHORT).show()
+                                    }
                                 )
-
-                                val userFile = File(context.filesDir, "users.json")
-                                UserRepository.saveUsersToFile(userFile)
-
-                                Toast.makeText(
-                                    context,
-                                    "Usuário registrado com sucesso!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                                onRegisterClick()
+                                                            onRegisterClick()
                             }
                         },
                         modifier = modifier.padding(16.dp)

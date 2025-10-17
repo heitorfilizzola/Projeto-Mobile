@@ -62,6 +62,8 @@ dependencies {
 
     implementation("com.google.code.gson:gson:2.10.1")
     implementation(libs.firebase.firestore)
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation("com.google.firebase:firebase-analytics")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

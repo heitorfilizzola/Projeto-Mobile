@@ -19,7 +19,6 @@ data class User(
 object UserRepository {
     val allUsers: MutableList<User> = mutableListOf()
     private val gson = Gson()
-    val db = Firebase.firestore
 
     fun findUserByEmal(email: String): User? {
         return allUsers.find { it.email.equals(email, ignoreCase = true) }
@@ -60,7 +59,9 @@ object UserRepository {
         }
     }
 
-    fun createUser(newUsername: String, newEmail: String, newPassword: String) {
+    fun createUser(newUsername: String, newEmail: String, newPassword: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        val db = Firebase.firestore
+
         if (newUsername.isNotBlank() && newEmail.isNotBlank() && newPassword.isNotBlank()) {
             val createTag = "UserCreation"
 
@@ -68,14 +69,15 @@ object UserRepository {
                 "username" to newUsername,
                 "email" to newEmail,
                 "passwordHash" to newPassword, // Lembre-se do alerta de segurança sobre senhas!
-                "uTaskList" to emptyList<Tarefa>()
+                "uTaskList" to emptyMap<String, Any>()
             )
+            Log.d(createTag, "UserMap Created")
 
+            db.collection("users")
             db.collection("users")
                 .add(newUserMap)
                 .addOnSuccessListener { documentReference ->
-                    Log.d(createTag, "Usuário salvo no Firebase com o ID: ${documentReference.id}")
-
+                    Log.d("UserCreation", "Usuário salvo no Firebase com o ID: ${documentReference.id}")
                     val createdUser = User(
                         id = documentReference.id, // Use o ID retornado pelo Firebase!
                         username = newUsername,
@@ -86,10 +88,15 @@ object UserRepository {
 
                     allUsers.add(createdUser)
                     Log.d(createTag, "Usuário ${createdUser.username} adicionado à lista local.")
+                    onSuccess()
                 }
                 .addOnFailureListener { e ->
-                    Log.w(createTag, "Erro ao salvar usuário no Firebase", e)
+                    Log.w("UserCreation", "Erro ao salvar usuário no Firebase", e)
+
+                    // CHAMA O CALLBACK DE FALHA
+                    onFailure(e)
                 }
+
         } else {
             Log.e("CreationError", "Erro: todos os campos devem ser preenchidos.")
         }
