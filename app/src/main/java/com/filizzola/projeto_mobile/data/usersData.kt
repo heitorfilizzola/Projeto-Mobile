@@ -1,6 +1,8 @@
 package com.filizzola.projeto_mobile.data
 
 import android.util.Log
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.io.File
@@ -17,6 +19,7 @@ data class User(
 object UserRepository {
     val allUsers: MutableList<User> = mutableListOf()
     private val gson = Gson()
+    val db = Firebase.firestore
 
     fun findUserByEmal(email: String): User? {
         return allUsers.find { it.email.equals(email, ignoreCase = true) }
@@ -59,21 +62,36 @@ object UserRepository {
 
     fun createUser(newUsername: String, newEmail: String, newPassword: String) {
         if (newUsername.isNotBlank() && newEmail.isNotBlank() && newPassword.isNotBlank()) {
-            val createTag = "Criado"
-            val newId = UUID.randomUUID().toString()
+            val createTag = "UserCreation"
 
-            val newUser = User(
-                id = newId,
-                username = newUsername,
-                email = newEmail,
-                passwordHash = newPassword,
-                uTaskList = mutableListOf()
+            val newUserMap = hashMapOf(
+                "username" to newUsername,
+                "email" to newEmail,
+                "passwordHash" to newPassword, // Lembre-se do alerta de segurança sobre senhas!
+                "uTaskList" to emptyList<Tarefa>()
             )
 
-            allUsers.add(newUser)
-            Log.d(createTag, "User ${newUser.username} added with ${newUser.id} ID")
+            db.collection("users")
+                .add(newUserMap)
+                .addOnSuccessListener { documentReference ->
+                    Log.d(createTag, "Usuário salvo no Firebase com o ID: ${documentReference.id}")
+
+                    val createdUser = User(
+                        id = documentReference.id, // Use o ID retornado pelo Firebase!
+                        username = newUsername,
+                        email = newEmail,
+                        passwordHash = newPassword,
+                        uTaskList = mutableListOf()
+                    )
+
+                    allUsers.add(createdUser)
+                    Log.d(createTag, "Usuário ${createdUser.username} adicionado à lista local.")
+                }
+                .addOnFailureListener { e ->
+                    Log.w(createTag, "Erro ao salvar usuário no Firebase", e)
+                }
         } else {
-            Log.e("CreationError", "Error: all inputs should be filled")
+            Log.e("CreationError", "Erro: todos os campos devem ser preenchidos.")
         }
     }
 
