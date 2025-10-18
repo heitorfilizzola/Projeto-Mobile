@@ -1,13 +1,17 @@
 package com.filizzola.projeto_mobile.data
 
 import android.util.Log
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
+import com.filizzola.projeto_mobile.supabase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import java.io.File
 import java.util.UUID
 
+@Serializable
 data class User(
     val id: String,
     val username: String,
@@ -59,46 +63,37 @@ object UserRepository {
         }
     }
 
-    fun createUser(newUsername: String, newEmail: String, newPassword: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        val db = Firebase.firestore
-
+    // O suspend serve para marcar uma funçao como assincrona, permitindo que ela seja pausada e retomada sem bloquear a thread em que foi chamada.
+    suspend fun createUser(newUsername: String, newEmail: String, newPassword: String) {
         if (newUsername.isNotBlank() && newEmail.isNotBlank() && newPassword.isNotBlank()) {
-            val createTag = "UserCreation"
+            val createTag = "Criado"
+            val newId = UUID.randomUUID().toString()
 
-            val newUserMap = hashMapOf(
-                "username" to newUsername,
-                "email" to newEmail,
-                "passwordHash" to newPassword, // Lembre-se do alerta de segurança sobre senhas!
-                "uTaskList" to emptyMap<String, Any>()
+            val newUser = User(
+                id = newId,
+                username = newUsername,
+                email = newEmail,
+                passwordHash = newPassword,
+                uTaskList = mutableListOf()
             )
-            Log.d(createTag, "UserMap Created")
 
-            db.collection("users")
-            db.collection("users")
-                .add(newUserMap)
-                .addOnSuccessListener { documentReference ->
-                    Log.d("UserCreation", "Usuário salvo no Firebase com o ID: ${documentReference.id}")
-                    val createdUser = User(
-                        id = documentReference.id, // Use o ID retornado pelo Firebase!
-                        username = newUsername,
-                        email = newEmail,
-                        passwordHash = newPassword,
-                        uTaskList = mutableListOf()
-                    )
-
-                    allUsers.add(createdUser)
-                    Log.d(createTag, "Usuário ${createdUser.username} adicionado à lista local.")
-                    onSuccess()
-                }
-                .addOnFailureListener { e ->
-                    Log.w("UserCreation", "Erro ao salvar usuário no Firebase", e)
-
-                    // CHAMA O CALLBACK DE FALHA
-                    onFailure(e)
+            try {
+                supabase.from("User").insert(newUser)
+                withContext(Dispatchers.Main) {
+                    allUsers.add(newUser)
+                    Log.d(createTag, "User ${newUser.username} added with ${newUser.id} ID")
                 }
 
+            } catch (e: Exception) {
+
+                Log.e("SupabaseInsertError", "Erro ao inserir usuário no Supabase", e)
+                throw e
+            }
+
+            allUsers.add(newUser)
+            Log.d(createTag, "User ${newUser.username} added with ${newUser.id} ID")
         } else {
-            Log.e("CreationError", "Erro: todos os campos devem ser preenchidos.")
+            Log.e("CreationError", "Error: all inputs should be filled")
         }
     }
 

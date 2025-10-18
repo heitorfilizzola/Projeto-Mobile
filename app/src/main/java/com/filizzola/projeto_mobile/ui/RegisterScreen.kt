@@ -1,6 +1,7 @@
 package com.filizzola.projeto_mobile.ui
 
 import android.widget.Toast
+import androidx.activity.result.launch
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -85,7 +88,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
             Box(
                 modifier = Modifier
                     .verticalScroll(rememberScrollState()),
-                ) {
+            ) {
                 IconButton(
                     onClick = onLoginBtnClick,
                     modifier = Modifier
@@ -126,7 +129,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = usernameInput,
                         onValueChanged = { usernameInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     LoginField(
@@ -143,7 +148,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = emailInput,
                         onValueChanged = { emailInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     RegisterField(
@@ -160,7 +167,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = passInput,
                         onValueChanged = { passInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     RegisterField(
@@ -177,56 +186,55 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = passConfirmInput,
                         onValueChanged = { passConfirmInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
+                    val scope = rememberCoroutineScope() // Gerenciamento de corrotinas
                     Button(
                         onClick = {
+                            scope.launch { // Lança corrotina
 
-                            android.util.Log.d("RegisterScreen", "O BOTÃO DE REGISTRO FOI CLICADO!")
-                            // Validação dos campos de entrada
-                            val areFieldsBlank =
-                                usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
-                            val doPasswordsMatch = passInput == passConfirmInput
+                                // Validação dos campos de entrada
+                                val areFieldsBlank =
+                                    usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
+                                val doPasswordsMatch = passInput == passConfirmInput
 
-                            if (!doPasswordsMatch) {
-                                android.util.Log.e("RegisterScreen", "VALIDAÇÃO FALHOU: As senhas não conferem.")
-                                Toast.makeText(
-                                    context,
-                                    "As senhas não conferem!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else if (areFieldsBlank) {
-                                android.util.Log.e("RegisterScreen", "VALIDAÇÃO FALHOU: Por favor, preencha todos os campos.")
-                                Toast.makeText(
-                                    context,
-                                    "Por favor, preencha todos os campos.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                android.util.Log.d("RegisterScreen", "VALIDAÇÃO OK! Chamando createUser...")
-
-                                UserRepository.createUser(
-                                    newUsername = usernameInput,
-                                    newEmail = emailInput,
-                                    newPassword = passInput,
-                                    onSuccess = {
-                                        // ESTE CÓDIGO SÓ RODA QUANDO O FIREBASE CONFIRMA O SUCESSO
-                                        android.util.Log.d("RegisterScreen", "Callback de SUCESSO recebido do Firebase!")
-
-                                        val userFile = File(context.filesDir, "users.json")
-                                        UserRepository.saveUsersToFile(userFile)
-
-                                        Toast.makeText(context, "Usuário registrado com sucesso!", Toast.LENGTH_SHORT).show()
-                                        onRegisterClick()
-                                    },
-                                    onFailure = { exception ->
-                                        // ESTE CÓDIGO SÓ RODA QUANDO O FIREBASE CONFIRMA A FALHA
-                                        android.util.Log.e("RegisterScreen", "Callback de FALHA recebido: ", exception)
-                                        Toast.makeText(context, "Erro ao registrar. Tente novamente.", Toast.LENGTH_SHORT).show()
+                                if (!doPasswordsMatch) {
+                                    Toast.makeText(
+                                        context,
+                                        "As senhas não conferem!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else if (areFieldsBlank) {
+                                    Toast.makeText(
+                                        context,
+                                        "Por favor, preencha todos os campos.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    try {
+                                        // A execucao pausa aq sem congelar a tela
+                                        UserRepository.createUser(
+                                            newUsername = usernameInput,
+                                            newEmail = emailInput,
+                                            newPassword = passInput
+                                        )
+                                        // Retoma quando createuser termina
+                                    } catch (e: Exception) {
                                     }
-                                )
-                                                            onRegisterClick()
+                                }
+
+                                val userFile = File(context.filesDir, "users.json")
+                                UserRepository.saveUsersToFile(userFile)
+
+                                Toast.makeText(
+                                    context,
+                                    "Usuário registrado com sucesso!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onRegisterClick()
                             }
                         },
                         modifier = modifier.padding(16.dp)

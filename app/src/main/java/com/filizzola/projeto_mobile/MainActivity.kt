@@ -19,6 +19,18 @@ import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.*
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+
+val supabase = createSupabaseClient(
+
+    supabaseUrl = "https://xyzcompany.supabase.co",
+    supabaseKey = "publishable-or-anon-key"
+) {
+    install(Auth)
+    install(Postgrest)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
