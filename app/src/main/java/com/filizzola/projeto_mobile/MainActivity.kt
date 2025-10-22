@@ -51,7 +51,12 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(innerPadding),
                                     onNavigateToRegister = { navController.navigate("register") },
                                     onLoginSuccess = { user ->
-                                        navController.navigate("tasks/${user.id}")
+                                        navController.navigate("tasks/${user.id}") {
+                                            popUpTo("login") {
+                                                inclusive =
+                                                    true // 'true' significa que a própria tela de "login" também será removida.
+                                            }
+                                        }
                                     },
                                     onClickTaski = {
                                         if (UserRepository.allUsers.isNotEmpty()) {

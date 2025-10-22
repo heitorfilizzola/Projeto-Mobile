@@ -2,6 +2,7 @@ package com.filizzola.projeto_mobile.ui
 
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,6 +58,8 @@ import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Composable para exibir a imagem de fundo da tela.
@@ -86,6 +89,8 @@ fun GreetingLogin(
     val context = LocalContext.current
     val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
+
+    val scope = rememberCoroutineScope()
 
     bgImage()
 
@@ -131,7 +136,9 @@ fun GreetingLogin(
                     ),
                     value = emailInput,
                     onValueChanged = { emailInput = it },
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
                 LoginField(
@@ -144,7 +151,9 @@ fun GreetingLogin(
                     value = passInput,
                     onValueChanged = { passInput = it },
                     isPassword = true,
-                    modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
                 )
 
                 Button(
@@ -152,6 +161,7 @@ fun GreetingLogin(
                         if (emailInput.isBlank() || passInput.isBlank()) {
                             Toast.makeText(context, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
                         } else {
+                            scope.launch {
                             val loggedInUser = UserRepository.login(emailInput, passInput)
                             if (loggedInUser != null) {
                                 Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
@@ -160,7 +170,7 @@ fun GreetingLogin(
                             } else {
                                 Toast.makeText(context, "Email ou senha incorretos.", Toast.LENGTH_SHORT).show()
                             }
-                        }
+                        }}
                     },
                     modifier = Modifier.padding(top = 16.dp)
                 ) {

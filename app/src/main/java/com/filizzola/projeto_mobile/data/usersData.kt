@@ -33,23 +33,74 @@ object UserRepository {
         return allUsers.find { it.email.equals(email, ignoreCase = true) }
     }
 
-    fun login(email: String, password: String): User? {
+    suspend fun login(email: String, password: String): User? {
         val loginTag = "LoginProcess"
-        val user = findUserByEmal(email)
+        try {
+            supabase.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
 
-        if (user == null) {
-            Log.e(loginTag, "Login Falhou, Usuario com email $email nao encontrado")
-            return null
-        }
+            val user = findUserByEmal(email)
 
-        if (password == user.passwordHash) {
-            Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
-            return user
-        } else {
-            Log.d(loginTag, "Erro no login para o usuario: ${user.username} (${user.id})")
+            if (user != null) {
+                Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
+                return user
+            } else {
+                // Cenário de fallback: se o usuário existe no Supabase mas não localmente.
+                // Pode acontecer se o app foi reinstalado.
+                // Aqui você poderia, opcionalmente, recriar o usuário na lista local a partir dos dados do Supabase.
+                Log.w(loginTag, "Usuário autenticado via Supabase, mas não encontrado na lista local 'allUsers'.")
+
+                // Tentando recuperar o ID e o nome do usuário da sessão atual do Supabase
+                val session = supabase.auth.currentSessionOrNull()
+                if(session != null) {
+                    val authenticatedUser = User(
+                        id = session.user!!.id, // ID do Supabase
+                        username = session.user!!.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: "Usuário",
+                        email = email,
+                        passwordHash = "", // Não armazene a senha em texto plano!
+                        uTaskList = arrayListOf()
+                    )
+                    // Adiciona o usuário recuperado à lista local para consistência
+                    allUsers.add(authenticatedUser)
+                    return authenticatedUser
+                }
+
+                return null
+            }
+
+        } catch (e: Exception) {
+            // 3. Se o Supabase retornar um erro (ex: senha incorreta, usuário não existe),
+            //    a exceção será capturada aqui.
+            Log.e(loginTag, "Login Falhou. Erro do Supabase: ${e.message}", e)
             return null
         }
     }
+
+    suspend fun logout() {
+        supabase.auth.signOut()
+        Log.d("LogoutProcess", "Usuário deslogado com sucesso.")
+    }
+
+
+//    fun login(email: String, password: String): User? {
+//        val loginTag = "LoginProcess"
+//        val user = findUserByEmal(email)
+//
+//        if (user == null) {
+//            Log.e(loginTag, "Login Falhou, Usuario com email $email nao encontrado")
+//            return null
+//        }
+//
+//        if (password == user.passwordHash) {
+//            Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
+//            return user
+//        } else {
+//            Log.d(loginTag, "Erro no login para o usuario: ${user.username} (${user.id})")
+//            return null
+//        }
+//    }
 
     fun toggleTaskStatusForUser(userId: String, taskId: String) {
         val userIndex = allUsers.indexOfFirst { it.id == userId }
@@ -63,7 +114,7 @@ object UserRepository {
                 )
                 val newTaskList = user.uTaskList.toMutableList()
                 newTaskList[taskIndex] = updatedTask
-//                allUsers[userIndex] = user.copy(uTaskList = newTaskList)
+                allUsers[userIndex] = user.copy(uTaskList = newTaskList as ArrayList<Tarefa>)
             }
         }
     }

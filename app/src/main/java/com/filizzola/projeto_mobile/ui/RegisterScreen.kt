@@ -234,6 +234,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                                     "Usuário registrado com sucesso!",
                                     Toast.LENGTH_SHORT
                                 ).show()
+
+                                Toast.makeText(
+                                    context,
+                                    "Verifique sua caixa de entrada para ativar sua conta.",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 onRegisterClick()
                             }
                         },
