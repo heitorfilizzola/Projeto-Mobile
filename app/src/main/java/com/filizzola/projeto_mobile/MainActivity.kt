@@ -24,7 +24,6 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 
 val supabase = createSupabaseClient(
-
     supabaseUrl = "https://xyzcompany.supabase.co",
     supabaseKey = "publishable-or-anon-key"
 ) {

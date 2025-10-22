@@ -172,11 +172,12 @@ fun TaskListScreen(
 @Preview(showBackground = true, name = "Tela de Lista de Tarefas")
 @Composable
 fun TaskListScreenPreview() {
-    val previewTasks = mutableListOf(
+    val previewTasks = arrayListOf(
         Tarefa(titulo = "Comprar pão e leite", status = "A fazer", userId = "previewUser"),
         Tarefa(titulo = "Terminar relatório do projeto", status = "A fazer", userId = "previewUser"),
         Tarefa(titulo = "Ir à academia", status = "Feito", userId = "previewUser")
     )
+
     // Corrigindo a criação do User para usar 'name' e 'password'
     val previewUser = User(
         id = "previewUser",

@@ -4,10 +4,15 @@ import android.util.Log
 import com.filizzola.projeto_mobile.supabase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.*
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import java.io.File
 import java.util.UUID
 
@@ -17,7 +22,7 @@ data class User(
     val username: String,
     val email: String,
     val passwordHash: String,
-    val uTaskList: MutableList<Tarefa>
+    val uTaskList: ArrayList<Tarefa>
 )
 
 object UserRepository {
@@ -58,7 +63,7 @@ object UserRepository {
                 )
                 val newTaskList = user.uTaskList.toMutableList()
                 newTaskList[taskIndex] = updatedTask
-                allUsers[userIndex] = user.copy(uTaskList = newTaskList)
+//                allUsers[userIndex] = user.copy(uTaskList = newTaskList)
             }
         }
     }
@@ -74,16 +79,27 @@ object UserRepository {
                 username = newUsername,
                 email = newEmail,
                 passwordHash = newPassword,
-                uTaskList = mutableListOf()
+                uTaskList = arrayListOf()
             )
 
             try {
-                supabase.from("User").insert(newUser)
+//                supabase.from("User").insert(newUser)
+
+                val metadata = buildJsonObject {
+                    put("username", kotlinx.serialization.json.JsonPrimitive(newUsername))
+                    put("uTaskList", buildJsonArray { })  // Empty array for tasks
+                }
+
+                supabase.auth.signUpWith(Email){
+                    email = newEmail;
+                    password = newPassword;
+                    data = metadata
+                }
+
                 withContext(Dispatchers.Main) {
                     allUsers.add(newUser)
                     Log.d(createTag, "User ${newUser.username} added with ${newUser.id} ID")
                 }
-
             } catch (e: Exception) {
 
                 Log.e("SupabaseInsertError", "Erro ao inserir usuário no Supabase", e)
