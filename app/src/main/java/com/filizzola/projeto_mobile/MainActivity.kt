@@ -22,6 +22,7 @@ import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.coroutines.launch
 
 val supabase = createSupabaseClient(
     supabaseUrl = "https://xyzcompany.supabase.co",
@@ -39,6 +40,8 @@ class MainActivity : ComponentActivity() {
             ProjetoMobileTheme {
                 val navController = rememberNavController()
                 var triggerRecomposition by remember { mutableStateOf(0) }
+                val coroutineScope = rememberCoroutineScope()
+
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -80,15 +83,16 @@ class MainActivity : ComponentActivity() {
                                             navController = navController,
                                             userId = userId,
                                             onDeleteTask = { taskIdToDelete ->
-                                                UserRepository.deleteTaskForUser(userId, taskIdToDelete)
-                                                // Altera o estado para forçar a atualização
-                                                triggerRecomposition++
+                                                coroutineScope.launch { // Launch a coroutine
+                                                    UserRepository.deleteTaskForUser(userId, taskIdToDelete)
+                                                    triggerRecomposition++
+                                                }
                                             },
-                                            // ADICIONADO: Passando a nova função de swipe
                                             onToggleTaskStatus = { taskToToggle ->
-                                                UserRepository.toggleTaskStatusForUser(userId, taskToToggle.id)
-                                                // Altera o estado para forçar a atualização
-                                                triggerRecomposition++
+                                                coroutineScope.launch { // Launch a coroutine
+                                                    UserRepository.toggleTaskStatusForUser(userId, taskToToggle.id)
+                                                    triggerRecomposition++
+                                                }
                                             }
                                         )
                                     }
@@ -104,10 +108,11 @@ class MainActivity : ComponentActivity() {
                                     AddTaskScreen(
                                         navController = navController,
                                         onAddTask = { novaTarefa ->
-                                            UserRepository.addTaskToUser(userId, novaTarefa)
-                                            // Força a atualização da tela anterior ao voltar
-                                            triggerRecomposition++
-                                            navController.popBackStack()
+                                            coroutineScope.launch {
+                                                UserRepository.addTaskToUser(userId, novaTarefa)
+                                                triggerRecomposition++
+                                                navController.popBackStack()
+                                            }
                                         },
                                         userId = userId
                                     )

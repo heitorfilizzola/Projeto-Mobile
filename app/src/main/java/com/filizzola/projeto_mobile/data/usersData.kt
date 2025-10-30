@@ -21,8 +21,16 @@ data class User(
     val id: String,
     val username: String,
     val email: String,
-    val passwordHash: String,
-    val uTaskList: ArrayList<Tarefa>
+    val passwordHash: String? = null,
+    var uTaskList: ArrayList<Tarefa>
+)
+
+@Serializable
+data class TarefaSupabase(
+    val id: String,
+    val titulo: String,
+    val status: String,
+    val userId: String // Chave estrangeira para associar a tarefa ao usuário
 )
 
 object UserRepository {
@@ -33,46 +41,64 @@ object UserRepository {
         return allUsers.find { it.email.equals(email, ignoreCase = true) }
     }
 
+    private suspend fun fetchTasksForUser(userId: String): ArrayList<Tarefa> {
+        val tasksTag = "FetchTasks"
+        try {
+            // Busca na tabela "tarefas" onde a coluna "user_id" corresponde ao ID do usuário
+            // A função decodeList<Tarefa> mapeará a resposta para sua classe de dados local.
+            val tasksFromSupabase = supabase.from("Tasks").select() {
+                filter {
+                    eq("userId", userId)
+                }
+            }.decodeList<Tarefa>()
+
+            Log.d(tasksTag, "Tarefas buscadas com sucesso para o usuário $userId: ${tasksFromSupabase.size} tarefas encontradas.")
+            return ArrayList(tasksFromSupabase)
+        } catch (e: Exception) {
+            Log.e(tasksTag, "Erro ao buscar tarefas para o usuário $userId no Supabase.", e)
+            return arrayListOf() // Retorna uma lista vazia em caso de erro
+        }
+    }
+
     suspend fun login(email: String, password: String): User? {
         val loginTag = "LoginProcess"
         try {
+            // 1. Autentica o usuário no Supabase
             supabase.auth.signInWith(Email) {
                 this.email = email
                 this.password = password
             }
 
-            val user = findUserByEmal(email)
+            // 2. Obtém a sessão atual para pegar os dados do usuário autenticado
+            val session = supabase.auth.currentSessionOrNull()
+            if (session?.user != null) {
+                val userId = session.user!!.id
 
-            if (user != null) {
-                Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
-                return user
-            } else {
-                // Cenário de fallback: se o usuário existe no Supabase mas não localmente.
-                // Pode acontecer se o app foi reinstalado.
-                // Aqui você poderia, opcionalmente, recriar o usuário na lista local a partir dos dados do Supabase.
-                Log.w(loginTag, "Usuário autenticado via Supabase, mas não encontrado na lista local 'allUsers'.")
+                // 3. Puxa a lista de tasks do banco pelo userId
+                val userTasks = fetchTasksForUser(userId)
 
-                // Tentando recuperar o ID e o nome do usuário da sessão atual do Supabase
-                val session = supabase.auth.currentSessionOrNull()
-                if(session != null) {
-                    val authenticatedUser = User(
-                        id = session.user!!.id, // ID do Supabase
-                        username = session.user!!.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: "Usuário",
-                        email = email,
-                        passwordHash = "", // Não armazene a senha em texto plano!
-                        uTaskList = arrayListOf()
-                    )
-                    // Adiciona o usuário recuperado à lista local para consistência
+                val authenticatedUser = User(
+                    id = userId,
+                    username = session.user!!.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: "Usuário",
+                    email = email,
+                    uTaskList = userTasks // Atribui a lista de tarefas buscada
+                )
+
+                // 4. Adiciona ou atualiza o usuário na lista local
+                val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
+                if (existingUserIndex != -1) {
+                    allUsers[existingUserIndex] = authenticatedUser
+                } else {
                     allUsers.add(authenticatedUser)
-                    return authenticatedUser
                 }
 
+                Log.d(loginTag, "Login bem-sucedido e tarefas carregadas para o usuário: ${authenticatedUser.username}")
+                return authenticatedUser
+            } else {
+                Log.e(loginTag, "Login falhou: sessão do Supabase não encontrada após a autenticação.")
                 return null
             }
-
         } catch (e: Exception) {
-            // 3. Se o Supabase retornar um erro (ex: senha incorreta, usuário não existe),
-            //    a exceção será capturada aqui.
             Log.e(loginTag, "Login Falhou. Erro do Supabase: ${e.message}", e)
             return null
         }
@@ -129,7 +155,7 @@ object UserRepository {
                 id = newId,
                 username = newUsername,
                 email = newEmail,
-                passwordHash = newPassword,
+//                passwordHash = newPassword,
                 uTaskList = arrayListOf()
             )
 
@@ -164,9 +190,34 @@ object UserRepository {
         }
     }
 
-    fun addTaskToUser(userId: String, task: Tarefa) {
-        val user = allUsers.find { it.id == userId }
-        user?.uTaskList?.add(task)
+    suspend fun addTaskToUser(userId: String, task: Tarefa) {
+        val addTaskTag = "AddTask"
+
+        // 1. Prepara a tarefa para ser inserida no Supabase, incluindo o user_id.
+        // A sua classe Tarefa já tem o userId, então podemos usá-la diretamente.
+        // No entanto, para garantir que o nome da coluna no banco ("user_id") está correto,
+        // criamos um objeto intermediário TarefaSupabase.
+        val taskForSupabase = TarefaSupabase(
+            id = task.id,
+            titulo = task.titulo,
+            status = task.status,
+            userId = userId // Garante que o ID do usuário logado seja usado
+        )
+
+        try {
+            // 2. Insere a nova tarefa na tabela "tarefas" do Supabase
+            supabase.from("Tasks").insert(taskForSupabase)
+
+            // 3. Atualiza a lista de tarefas local do usuário
+            val user = allUsers.find { it.id == userId }
+            user?.uTaskList?.add(task)
+            Log.d(addTaskTag, "Tarefa ${task.id} adicionada com sucesso ao usuário $userId no Supabase e localmente.")
+
+        } catch (e: Exception) {
+            Log.e(addTaskTag, "Erro ao salvar a tarefa ${task.id} no Supabase para o usuário $userId.", e)
+            // Lançar a exceção pode ser útil para notificar a UI sobre a falha
+            throw e
+        }
     }
 
     fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
@@ -180,10 +231,28 @@ object UserRepository {
         }
     }
 
-    fun deleteTaskForUser(userId: String, taskId: String) {
-        val user = allUsers.find { it.id == userId }
-        user?.uTaskList?.removeAll { it.id == taskId }
-        Log.d("TaskDelete", "Tarefa $taskId deletada para o usuário $userId")
+    suspend fun deleteTaskForUser(userId: String, taskId: String) {
+        val deleteTag = "TaskDelete"
+        try {
+            // 1. Deleta a tarefa do banco de dados Supabase
+            supabase.from("Tasks").delete {
+                filter {
+                    eq("id", taskId)      // Encontra a tarefa pelo seu ID
+                    eq("userId", userId)  // Garante que só pode deletar a tarefa se for o dono
+                }
+            }
+            Log.d(deleteTag, "Tarefa $taskId deletada do Supabase para o usuário $userId")
+
+            // 2. Remove a tarefa da lista local (cache)
+            val user = allUsers.find { it.id == userId }
+            user?.uTaskList?.removeAll { it.id == taskId }
+            Log.d(deleteTag, "Tarefa $taskId removida do cache local.")
+
+        } catch (e: Exception) {
+            Log.e(deleteTag, "Erro ao deletar a tarefa $taskId no Supabase.", e)
+            // Lança a exceção para que a UI possa ser notificada do erro
+            throw e
+        }
     }
 
 
