@@ -37,26 +37,19 @@ object UserRepository {
     val allUsers: MutableList<User> = mutableListOf()
     private val gson = Gson()
 
-    fun findUserByEmal(email: String): User? {
-        return allUsers.find { it.email.equals(email, ignoreCase = true) }
-    }
-
     private suspend fun fetchTasksForUser(userId: String): ArrayList<Tarefa> {
         val tasksTag = "FetchTasks"
         try {
-            // Busca na tabela "tarefas" onde a coluna "user_id" corresponde ao ID do usuário
-            // A função decodeList<Tarefa> mapeará a resposta para sua classe de dados local.
             val tasksFromSupabase = supabase.from("Tasks").select() {
                 filter {
                     eq("userId", userId)
                 }
             }.decodeList<Tarefa>()
-
             Log.d(tasksTag, "Tarefas buscadas com sucesso para o usuário $userId: ${tasksFromSupabase.size} tarefas encontradas.")
             return ArrayList(tasksFromSupabase)
         } catch (e: Exception) {
             Log.e(tasksTag, "Erro ao buscar tarefas para o usuário $userId no Supabase.", e)
-            return arrayListOf() // Retorna uma lista vazia em caso de erro
+            return arrayListOf()
         }
     }
 
@@ -69,22 +62,17 @@ object UserRepository {
                 this.password = password
             }
 
-            // 2. Obtém a sessão atual para pegar os dados do usuário autenticado
             val session = supabase.auth.currentSessionOrNull()
             if (session?.user != null) {
                 val userId = session.user!!.id
-
-                // 3. Puxa a lista de tasks do banco pelo userId
                 val userTasks = fetchTasksForUser(userId)
-
                 val authenticatedUser = User(
                     id = userId,
                     username = session.user!!.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: "Usuário",
                     email = email,
-                    uTaskList = userTasks // Atribui a lista de tarefas buscada
+                    uTaskList = userTasks
                 )
 
-                // 4. Adiciona ou atualiza o usuário na lista local
                 val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
                 if (existingUserIndex != -1) {
                     allUsers[existingUserIndex] = authenticatedUser
@@ -109,6 +97,8 @@ object UserRepository {
         Log.d("LogoutProcess", "Usuário deslogado com sucesso.")
     }
 
+
+    // Versão antiga do login sem Supabase (Provavelmente havera reutilizacao de parte para poder implementar login offline)
 
 //    fun login(email: String, password: String): User? {
 //        val loginTag = "LoginProcess"
@@ -158,21 +148,16 @@ object UserRepository {
 //                passwordHash = newPassword,
                 uTaskList = arrayListOf()
             )
-
             try {
-//                supabase.from("User").insert(newUser)
-
                 val metadata = buildJsonObject {
                     put("username", kotlinx.serialization.json.JsonPrimitive(newUsername))
                     put("uTaskList", buildJsonArray { })  // Empty array for tasks
                 }
-
                 supabase.auth.signUpWith(Email){
                     email = newEmail;
                     password = newPassword;
                     data = metadata
                 }
-
                 withContext(Dispatchers.Main) {
                     allUsers.add(newUser)
                     Log.d(createTag, "User ${newUser.username} added with ${newUser.id} ID")
@@ -193,29 +178,20 @@ object UserRepository {
     suspend fun addTaskToUser(userId: String, task: Tarefa) {
         val addTaskTag = "AddTask"
 
-        // 1. Prepara a tarefa para ser inserida no Supabase, incluindo o user_id.
-        // A sua classe Tarefa já tem o userId, então podemos usá-la diretamente.
-        // No entanto, para garantir que o nome da coluna no banco ("user_id") está correto,
-        // criamos um objeto intermediário TarefaSupabase.
         val taskForSupabase = TarefaSupabase(
             id = task.id,
             titulo = task.titulo,
             status = task.status,
-            userId = userId // Garante que o ID do usuário logado seja usado
+            userId = userId
         )
 
         try {
-            // 2. Insere a nova tarefa na tabela "tarefas" do Supabase
             supabase.from("Tasks").insert(taskForSupabase)
-
-            // 3. Atualiza a lista de tarefas local do usuário
             val user = allUsers.find { it.id == userId }
             user?.uTaskList?.add(task)
             Log.d(addTaskTag, "Tarefa ${task.id} adicionada com sucesso ao usuário $userId no Supabase e localmente.")
-
         } catch (e: Exception) {
             Log.e(addTaskTag, "Erro ao salvar a tarefa ${task.id} no Supabase para o usuário $userId.", e)
-            // Lançar a exceção pode ser útil para notificar a UI sobre a falha
             throw e
         }
     }
@@ -234,28 +210,26 @@ object UserRepository {
     suspend fun deleteTaskForUser(userId: String, taskId: String) {
         val deleteTag = "TaskDelete"
         try {
-            // 1. Deleta a tarefa do banco de dados Supabase
             supabase.from("Tasks").delete {
                 filter {
-                    eq("id", taskId)      // Encontra a tarefa pelo seu ID
-                    eq("userId", userId)  // Garante que só pode deletar a tarefa se for o dono
+                    eq("id", taskId)
+                    eq("userId", userId)
                 }
             }
             Log.d(deleteTag, "Tarefa $taskId deletada do Supabase para o usuário $userId")
-
-            // 2. Remove a tarefa da lista local (cache)
+            // Remove a tarefa da lista local (cache)
             val user = allUsers.find { it.id == userId }
             user?.uTaskList?.removeAll { it.id == taskId }
             Log.d(deleteTag, "Tarefa $taskId removida do cache local.")
-
         } catch (e: Exception) {
             Log.e(deleteTag, "Erro ao deletar a tarefa $taskId no Supabase.", e)
-            // Lança a exceção para que a UI possa ser notificada do erro
             throw e
         }
     }
 
-
+    fun findUserByEmail(email: String): User? {
+        return allUsers.find { it.email.equals(email, ignoreCase = true) }
+    }
     fun saveUsersToFile(file: File) {
         val jsonString = gson.toJson(allUsers)
         file.writeText(jsonString)

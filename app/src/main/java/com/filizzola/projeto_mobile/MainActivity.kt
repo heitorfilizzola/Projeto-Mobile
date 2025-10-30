@@ -49,6 +49,8 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             startDestination = "login"
                         ) {
+
+                            // Controle de navegação para a tela de login
                             composable("login") {
                                 GreetingLogin(
                                     modifier = Modifier.padding(innerPadding),
@@ -70,6 +72,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
+                            // Controle de navegação para a tela de lista de tarefas
                             composable(
                                 route = "tasks/{userId}",
                                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
@@ -99,6 +102,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            // Controle de navegação para a tela de adicionar tarefa
                             composable(
                                 "add_task/{userId}",
                                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
@@ -119,6 +123,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            // Controle de navegação para a tela de editar tarefa
                             composable(
                                 "edit_task/{userId}/{taskId}",
                                 arguments = listOf(
@@ -143,6 +148,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            // Controle de navegação para a tela de registro
                             composable("register") {
                                 RegisterScreen(
                                     modifier = Modifier.padding(innerPadding),
