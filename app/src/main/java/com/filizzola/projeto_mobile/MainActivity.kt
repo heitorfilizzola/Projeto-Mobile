@@ -137,10 +137,12 @@ class MainActivity : ComponentActivity() {
                                     EditTaskScreen(
                                         navController = navController,
                                         onEditTask = { tarefaAtualizada ->
-                                            UserRepository.updateTaskForUser(userId, tarefaAtualizada)
-                                            // Força a atualização da tela anterior ao voltar
-                                            triggerRecomposition++
-                                            navController.popBackStack()
+                                            coroutineScope.launch {
+                                                UserRepository.updateTaskForUser(userId, tarefaAtualizada)
+                                                // Força a atualização da tela anterior ao voltar
+                                                triggerRecomposition++
+                                                navController.popBackStack()
+                                            }
                                         },
                                         userId = userId,
                                         taskId = taskId

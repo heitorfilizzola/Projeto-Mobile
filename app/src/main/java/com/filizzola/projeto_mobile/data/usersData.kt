@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import java.io.File
+import kotlinx.serialization.json.JsonPrimitive
 import java.util.UUID
 
 @Serializable
@@ -118,20 +119,54 @@ object UserRepository {
 //        }
 //    }
 
-    fun toggleTaskStatusForUser(userId: String, taskId: String) {
-        val userIndex = allUsers.indexOfFirst { it.id == userId }
-        if (userIndex != -1) {
-            val user = allUsers[userIndex]
+    suspend fun toggleTaskStatusForUser(userId: String, taskId: String) {
+//        val userIndex = allUsers.indexOfFirst { it.id == userId }
+//        if (userIndex != -1) {
+//            val user = allUsers[userIndex]
+//            val taskIndex = user.uTaskList.indexOfFirst { it.id == taskId }
+//            if (taskIndex != -1) {
+//                val task = user.uTaskList[taskIndex]
+//                val updatedTask = task.copy(
+//                    status = if (task.status == "A fazer") "Feito" else "A fazer"
+//                )
+//                val newTaskList = user.uTaskList.toMutableList()
+//                newTaskList[taskIndex] = updatedTask
+//                allUsers[userIndex] = user.copy(uTaskList = newTaskList as ArrayList<Tarefa>)
+//            }
+//        }
+        val toggleTag = "TaskToggleStatus"
+        val user = allUsers.find { it.id == userId }
+        val task = user?.uTaskList?.find { it.id == taskId }
+
+        if (task == null) {
+            Log.e(toggleTag, "Tarefa $taskId não encontrada no cache local para o usuário $userId.")
+            return
+        }
+
+        val newStatus = if (task.status == "A fazer") "Feito" else "A fazer"
+
+        try {
+            val statusUpdate = buildJsonObject {
+                put("status", JsonPrimitive(newStatus))
+            }
+
+            supabase.from("Tasks").update(statusUpdate) {
+                filter {
+                    eq("id", taskId)
+                    eq("userId", userId)
+                }
+            }
+            Log.d(toggleTag, "Status da tarefa $taskId atualizado para '$newStatus' no Supabase.")
+
             val taskIndex = user.uTaskList.indexOfFirst { it.id == taskId }
             if (taskIndex != -1) {
-                val task = user.uTaskList[taskIndex]
-                val updatedTask = task.copy(
-                    status = if (task.status == "A fazer") "Feito" else "A fazer"
-                )
-                val newTaskList = user.uTaskList.toMutableList()
-                newTaskList[taskIndex] = updatedTask
-                allUsers[userIndex] = user.copy(uTaskList = newTaskList as ArrayList<Tarefa>)
+                user.uTaskList[taskIndex] = user.uTaskList[taskIndex].copy(status = newStatus)
+                Log.d(toggleTag, "Status da tarefa $taskId atualizado no cache local.")
             }
+
+        } catch (e: Exception) {
+            Log.e(toggleTag, "Erro ao atualizar status da tarefa $taskId no Supabase.", e)
+            throw e
         }
     }
 
@@ -196,14 +231,37 @@ object UserRepository {
         }
     }
 
-    fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
-        val user = allUsers.find { it.id == userId }
-        user?.let {
-            val taskIndex = it.uTaskList.indexOfFirst { task -> task.id == updatedTask.id }
-            if (taskIndex != -1) {
-                it.uTaskList[taskIndex] = updatedTask
-                Log.d("TaskUpdate", "Tarefa ${updatedTask.id} atualizada para o usuário $userId")
+    suspend fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
+        val updateTag = "TaskUpdate"
+        try {
+            // 1. Prepara os dados para o Supabase. Não precisa mandar o ID.
+            val updates = buildJsonObject {
+                put("titulo", kotlinx.serialization.json.JsonPrimitive(updatedTask.titulo))
+                put("status", kotlinx.serialization.json.JsonPrimitive(updatedTask.status))
+                // Adicione outras colunas que possam ser editadas aqui
             }
+
+            // 2. Atualiza a tarefa no banco de dados Supabase.
+            supabase.from("Tasks").update(updates) {
+                filter {
+                    eq("id", updatedTask.id) // Encontra a tarefa pelo ID dela
+                    eq("userId", userId)     // Garante que o usuário é o dono da tarefa
+                }
+            }
+            Log.d(updateTag, "Tarefa ${updatedTask.id} atualizada no Supabase.")
+
+            // 3. Atualiza a tarefa na lista local (cache) para refletir a mudança na UI imediatamente.
+            val user = allUsers.find { it.id == userId }
+            user?.let {
+                val taskIndex = it.uTaskList.indexOfFirst { task -> task.id == updatedTask.id }
+                if (taskIndex != -1) {
+                    it.uTaskList[taskIndex] = updatedTask
+                    Log.d(updateTag, "Tarefa ${updatedTask.id} atualizada no cache local para o usuário $userId")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(updateTag, "Erro ao atualizar a tarefa ${updatedTask.id} no Supabase.", e)
+            throw e // Lança o erro para a UI poder reagir
         }
     }
 
