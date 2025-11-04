@@ -19,6 +19,18 @@ import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.*
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.coroutines.launch
+
+val supabase = createSupabaseClient(
+    supabaseUrl = "https://xyzcompany.supabase.co",
+    supabaseKey = "publishable-or-anon-key"
+) {
+    install(Auth)
+    install(Postgrest)
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +40,8 @@ class MainActivity : ComponentActivity() {
             ProjetoMobileTheme {
                 val navController = rememberNavController()
                 var triggerRecomposition by remember { mutableStateOf(0) }
+                val coroutineScope = rememberCoroutineScope()
+
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Surface(modifier = Modifier.fillMaxSize()) {
@@ -35,12 +49,19 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             startDestination = "login"
                         ) {
+
+                            // Controle de navegação para a tela de login
                             composable("login") {
                                 GreetingLogin(
                                     modifier = Modifier.padding(innerPadding),
                                     onNavigateToRegister = { navController.navigate("register") },
                                     onLoginSuccess = { user ->
-                                        navController.navigate("tasks/${user.id}")
+                                        navController.navigate("tasks/${user.id}") {
+                                            popUpTo("login") {
+                                                inclusive =
+                                                    true // 'true' significa que a própria tela de "login" também será removida.
+                                            }
+                                        }
                                     },
                                     onClickTaski = {
                                         if (UserRepository.allUsers.isNotEmpty()) {
@@ -51,6 +72,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
+                            // Controle de navegação para a tela de lista de tarefas
                             composable(
                                 route = "tasks/{userId}",
                                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
@@ -64,21 +86,23 @@ class MainActivity : ComponentActivity() {
                                             navController = navController,
                                             userId = userId,
                                             onDeleteTask = { taskIdToDelete ->
-                                                UserRepository.deleteTaskForUser(userId, taskIdToDelete)
-                                                // Altera o estado para forçar a atualização
-                                                triggerRecomposition++
+                                                coroutineScope.launch { // Launch a coroutine
+                                                    UserRepository.deleteTaskForUser(userId, taskIdToDelete)
+                                                    triggerRecomposition++
+                                                }
                                             },
-                                            // ADICIONADO: Passando a nova função de swipe
                                             onToggleTaskStatus = { taskToToggle ->
-                                                UserRepository.toggleTaskStatusForUser(userId, taskToToggle.id)
-                                                // Altera o estado para forçar a atualização
-                                                triggerRecomposition++
+                                                coroutineScope.launch { // Launch a coroutine
+                                                    UserRepository.toggleTaskStatusForUser(userId, taskToToggle.id)
+                                                    triggerRecomposition++
+                                                }
                                             }
                                         )
                                     }
                                 }
                             }
 
+                            // Controle de navegação para a tela de adicionar tarefa
                             composable(
                                 "add_task/{userId}",
                                 arguments = listOf(navArgument("userId") { type = NavType.StringType })
@@ -88,16 +112,18 @@ class MainActivity : ComponentActivity() {
                                     AddTaskScreen(
                                         navController = navController,
                                         onAddTask = { novaTarefa ->
-                                            UserRepository.addTaskToUser(userId, novaTarefa)
-                                            // Força a atualização da tela anterior ao voltar
-                                            triggerRecomposition++
-                                            navController.popBackStack()
+                                            coroutineScope.launch {
+                                                UserRepository.addTaskToUser(userId, novaTarefa)
+                                                triggerRecomposition++
+                                                navController.popBackStack()
+                                            }
                                         },
                                         userId = userId
                                     )
                                 }
                             }
 
+                            // Controle de navegação para a tela de editar tarefa
                             composable(
                                 "edit_task/{userId}/{taskId}",
                                 arguments = listOf(
@@ -111,10 +137,12 @@ class MainActivity : ComponentActivity() {
                                     EditTaskScreen(
                                         navController = navController,
                                         onEditTask = { tarefaAtualizada ->
-                                            UserRepository.updateTaskForUser(userId, tarefaAtualizada)
-                                            // Força a atualização da tela anterior ao voltar
-                                            triggerRecomposition++
-                                            navController.popBackStack()
+                                            coroutineScope.launch {
+                                                UserRepository.updateTaskForUser(userId, tarefaAtualizada)
+                                                // Força a atualização da tela anterior ao voltar
+                                                triggerRecomposition++
+                                                navController.popBackStack()
+                                            }
                                         },
                                         userId = userId,
                                         taskId = taskId
@@ -122,6 +150,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            // Controle de navegação para a tela de registro
                             composable("register") {
                                 RegisterScreen(
                                     modifier = Modifier.padding(innerPadding),

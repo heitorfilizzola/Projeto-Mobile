@@ -1,6 +1,7 @@
 package com.filizzola.projeto_mobile.ui
 
 import android.widget.Toast
+import androidx.activity.result.launch
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -85,7 +88,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
             Box(
                 modifier = Modifier
                     .verticalScroll(rememberScrollState()),
-                ) {
+            ) {
                 IconButton(
                     onClick = onLoginBtnClick,
                     modifier = Modifier
@@ -126,7 +129,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = usernameInput,
                         onValueChanged = { usernameInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     LoginField(
@@ -143,7 +148,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = emailInput,
                         onValueChanged = { emailInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     RegisterField(
@@ -160,7 +167,9 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = passInput,
                         onValueChanged = { passInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
                     RegisterField(
@@ -177,35 +186,45 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                         ),
                         value = passConfirmInput,
                         onValueChanged = { passConfirmInput = it },
-                        modifier = Modifier.padding(bottom = 16.dp).fillMaxWidth()
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
                     )
 
+                    val scope = rememberCoroutineScope() // Gerenciamento de corrotinas
                     Button(
                         onClick = {
-                            // Validação dos campos de entrada
-                            val areFieldsBlank =
-                                usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
-                            val doPasswordsMatch = passInput == passConfirmInput
+                            scope.launch { // Lança corrotina
 
-                            if (!doPasswordsMatch) {
-                                Toast.makeText(
-                                    context,
-                                    "As senhas não conferem!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else if (areFieldsBlank) {
-                                Toast.makeText(
-                                    context,
-                                    "Por favor, preencha todos os campos.",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            } else {
-                                //  Se a validação passar, cria o usuário
-                                UserRepository.createUser(
-                                    newUsername = usernameInput,
-                                    newEmail = emailInput,
-                                    newPassword = passInput
-                                )
+                                // Validação dos campos de entrada
+                                val areFieldsBlank =
+                                    usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
+                                val doPasswordsMatch = passInput == passConfirmInput
+
+                                if (!doPasswordsMatch) {
+                                    Toast.makeText(
+                                        context,
+                                        "As senhas não conferem!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else if (areFieldsBlank) {
+                                    Toast.makeText(
+                                        context,
+                                        "Por favor, preencha todos os campos.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    try {
+                                        // A execucao pausa aq sem congelar a tela
+                                        UserRepository.createUser(
+                                            newUsername = usernameInput,
+                                            newEmail = emailInput,
+                                            newPassword = passInput
+                                        )
+                                        // Retoma quando createuser termina
+                                    } catch (e: Exception) {
+                                    }
+                                }
 
                                 val userFile = File(context.filesDir, "users.json")
                                 UserRepository.saveUsersToFile(userFile)
@@ -214,6 +233,12 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                                     context,
                                     "Usuário registrado com sucesso!",
                                     Toast.LENGTH_SHORT
+                                ).show()
+
+                                Toast.makeText(
+                                    context,
+                                    "Verifique sua caixa de entrada para ativar sua conta.",
+                                    Toast.LENGTH_LONG
                                 ).show()
                                 onRegisterClick()
                             }

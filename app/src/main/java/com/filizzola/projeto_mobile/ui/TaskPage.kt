@@ -1,5 +1,7 @@
 package com.filizzola.projeto_mobile.ui
 
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,6 +30,12 @@ import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
+import com.filizzola.projeto_mobile.supabase
+import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
@@ -43,6 +51,8 @@ fun TaskListScreen(
     val tarefas by remember(user?.uTaskList) {
         derivedStateOf { user?.uTaskList ?: emptyList() }
     }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -58,7 +68,27 @@ fun TaskListScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ){
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                try {
+                                    UserRepository.logout()
+                                    Log.d("Logout", "Logout bem sucedido")
+                                    Toast.makeText(context, "Logout bem-sucedido!", Toast.LENGTH_SHORT).show()
+                                    navController.navigate("login") {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            inclusive = true
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("LogoutError", "Falha ao fazer logout", e)
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(context, "Falha no logout: ${e.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }
+                        }
+                    ) {
                         Icon(Icons.Default.Logout, contentDescription = "LogOut")
                     }
                     Text("NoteSync", textAlign = TextAlign.Center)}
@@ -169,39 +199,6 @@ fun TaskListScreen(
     }
 }
 
-@Preview(showBackground = true, name = "Tela de Lista de Tarefas")
-@Composable
-fun TaskListScreenPreview() {
-    val previewTasks = mutableListOf(
-        Tarefa(titulo = "Comprar pão e leite", status = "A fazer", userId = "previewUser"),
-        Tarefa(titulo = "Terminar relatório do projeto", status = "A fazer", userId = "previewUser"),
-        Tarefa(titulo = "Ir à academia", status = "Feito", userId = "previewUser")
-    )
-    // Corrigindo a criação do User para usar 'name' e 'password'
-    val previewUser = User(
-        id = "previewUser",
-        username = "Usuário Teste",
-        email = "preview@email.com",
-        passwordHash = "123",
-        uTaskList = previewTasks
-    )
-
-    if (UserRepository.allUsers.find { it.id == "previewUser" } == null) {
-        UserRepository.allUsers.add(previewUser)
-    }
-
-    val navController = rememberNavController()
-
-    ProjetoMobileTheme {
-        // Chamada corrigida, sem os parâmetros que causavam o erro
-        TaskListScreen(
-            navController = navController,
-            userId = "previewUser",
-            onDeleteTask = { },
-            onToggleTaskStatus = { }
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -377,7 +374,7 @@ fun CategoriaSection(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(color, shape = MaterialTheme.shapes.large,)
+                                .background(color, shape = MaterialTheme.shapes.large)
                                 .padding(horizontal = 20.dp),
                             contentAlignment = alignment
                         ) {
@@ -416,3 +413,38 @@ fun CategoriaSection(
 }
 
 
+
+@Preview(showBackground = true, name = "Tela de Lista de Tarefas")
+@Composable
+fun TaskListScreenPreview() {
+    val previewTasks = arrayListOf(
+        Tarefa(titulo = "Comprar pão e leite", status = "A fazer", userId = "previewUser"),
+        Tarefa(titulo = "Terminar relatório do projeto", status = "A fazer", userId = "previewUser"),
+        Tarefa(titulo = "Ir à academia", status = "Feito", userId = "previewUser")
+    )
+
+    // Corrigindo a criação do User para usar 'name' e 'password'
+    val previewUser = User(
+        id = "previewUser",
+        username = "Usuário Teste",
+        email = "preview@email.com",
+        passwordHash = "123",
+        uTaskList = previewTasks
+    )
+
+    if (UserRepository.allUsers.find { it.id == "previewUser" } == null) {
+        UserRepository.allUsers.add(previewUser)
+    }
+
+    val navController = rememberNavController()
+
+    ProjetoMobileTheme {
+        // Chamada corrigida, sem os parâmetros que causavam o erro
+        TaskListScreen(
+            navController = navController,
+            userId = "previewUser",
+            onDeleteTask = { },
+            onToggleTaskStatus = { }
+        )
+    }
+}
