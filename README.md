@@ -1,6 +1,6 @@
 # NoteSync
 
-`NoteSync` é um aplicativo de gerenciamento de tarefas (to-do list) desenvolvido para Android. Ele permite que os usuários se registrem, façam login e gerenciem suas tarefas pessoais, sincronizando os dados com um backend Supabase.
+`NoteSync` é um aplicativo de gerenciamento de tarefas (to-do list) desenvolvido para Android. Ele permite que os usuários se registrem, façam login e gerenciem suas tarefas pessoais, sincronizando os dados com um backend em Supabase.
 
 O projeto é construído inteiramente com tecnologias modernas de desenvolvimento Android, utilizando Kotlin e Jetpack Compose para a interface do usuário.
 
