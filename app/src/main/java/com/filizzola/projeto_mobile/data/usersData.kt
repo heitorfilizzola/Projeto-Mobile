@@ -285,6 +285,25 @@ object UserRepository {
         }
     }
 
+    suspend fun syncTaskToServer(userId: String, tarefa: Tarefa) {
+        val syncTag = "SyncTask"
+        try {
+            val user = allUsers.find { it.id == userId } ?: return
+
+            val existingTaskIndex = user.uTaskList.indexOfFirst { it.id == tarefa.id }
+            if (existingTaskIndex != -1) {
+                user.uTaskList[existingTaskIndex] = tarefa
+                Log.d(syncTag, "Tarefa ${tarefa.id} atualizada no cache local durante sync.")
+            } else {
+                user.uTaskList.add(tarefa)
+                Log.d(syncTag, "Tarefa ${tarefa.id} adicionada no cache local durante sync.")
+            }
+        } catch (e: Exception) {
+            Log.e(syncTag, "Erro ao sincronizar tarefa ${tarefa.id} no cache local.", e)
+            throw e
+        }
+    }
+
     fun findUserByEmail(email: String): User? {
         return allUsers.find { it.email.equals(email, ignoreCase = true) }
     }

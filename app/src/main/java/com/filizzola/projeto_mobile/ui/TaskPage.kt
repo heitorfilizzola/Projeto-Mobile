@@ -350,13 +350,13 @@ fun CategoriaSection(
                         val direction = dismissState.dismissDirection ?: return@SwipeToDismissBox
                         val color by animateColorAsState(
                             when (direction) {
-                                SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde
+                                SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1C6FB7) // Verde
                                 SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho
                                 SwipeToDismissBoxValue.Settled -> Color.Transparent
                             }, label = "color_animation"
                         )
                         val icon = when (direction) {
-                            SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Done
+                            SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Redo
                             SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
                             SwipeToDismissBoxValue.Settled -> null
                         }
