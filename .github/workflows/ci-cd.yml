@@ -1,0 +1,68 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - test
+      - test-devops
+  pull_request:
+    branches:
+      - main
+      - test
+      - test-devops
+
+jobs:
+  build_and_test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Dar permissão ao Gradle Wrapper
+        run: chmod +x ./gradlew
+
+      - name: Rodar testes unitários
+        run: ./gradlew test
+
+      - name: Build APK de homolog (debug)
+        run: ./gradlew assembleDebug
+
+      - name: Upload do APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: notesync-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+  deploy_homolog:
+    name: Deploy Homologação
+    needs: build_and_test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Baixar artefato do APK
+        uses: actions/download-artifact@v4
+        with:
+          name: notesync-apk
+          path: ./dist
+
+      - name: Criar Release de Homologação
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Homolog v1.0.${{ github.run_number }}"
+          body: "Build de homologação gerado automaticamente pelo pipeline de CI/CD."
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
