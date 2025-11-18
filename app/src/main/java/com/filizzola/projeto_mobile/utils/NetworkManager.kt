@@ -12,7 +12,7 @@ class NetworkManager(private val context: Context) {
             try {
                 val url = URL("https://hotdhewlluokhhxamydi.supabase.co")
                 val connection = url.openConnection()
-                connection.connectTimeout = 5000
+                connection.connectTimeout = 500
                 connection.connect()
                 true
             } catch (e: Exception) {

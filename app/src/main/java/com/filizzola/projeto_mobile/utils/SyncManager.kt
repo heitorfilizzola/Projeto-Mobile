@@ -13,7 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
-private val Context.taskDataStore by preferencesDataStore(name = "tasks_prefs")
+private val Context.taskDataStore by preferencesDataStore(name = "tasks_local_storage")
 
 class SyncManager(private val context: Context) {
 
@@ -39,7 +39,9 @@ class SyncManager(private val context: Context) {
     suspend fun loadTasksFromLocal(userId: String): List<Tarefa> = withContext(Dispatchers.IO) {
         try {
             val preferences = context.taskDataStore.data.first()
+            // Busca a string salva com a chave "tasks_ID_DO_USUARIO"
             val tasksJson = preferences[stringPreferencesKey("tasks_$userId")]
+
             if (tasksJson != null) {
                 val type = object : TypeToken<List<Tarefa>>() {}.type
                 gson.fromJson(tasksJson, type)
@@ -47,18 +49,26 @@ class SyncManager(private val context: Context) {
                 emptyList()
             }
         } catch (e: Exception) {
+            Log.e("SyncManager", "Erro ao ler armazenamento local: ${e.message}")
             emptyList()
         }
     }
 
     suspend fun saveTaskLocally(userId: String, tasks: List<Tarefa>) = withContext(Dispatchers.IO) {
         try {
+            val jsonString = gson.toJson(tasks)
             context.taskDataStore.edit { preferences ->
-                preferences[stringPreferencesKey("tasks_$userId")] = gson.toJson(tasks)
+                preferences[stringPreferencesKey("tasks_$userId")] = jsonString
             }
+            Log.d("SyncManager", "Dados salvos no ARMAZENAMENTO DO DISPOSITIVO para user $userId")
         } catch (e: Exception) {
-            Log.e("SyncManager", "Error saving tasks locally: ${e.message}")
+            Log.e("SyncManager", "Erro ao gravar no disco: ${e.message}")
         }
+    }
+
+    suspend fun persistCurrentData(userId: String) {
+        val currentTasks = UserRepository.allUsers.find { it.id == userId }?.uTaskList ?: arrayListOf()
+        saveTaskLocally(userId, currentTasks)
     }
 
     suspend fun deleteTaskLocally(taskId: String) {

@@ -54,6 +54,59 @@ object UserRepository {
         }
     }
 
+    // --- NOVA FUNÇÃO DE SYNC (ESSENCIAL PARA OFFLINE -> ONLINE) ---
+    suspend fun syncUserData(userId: String): List<Tarefa>? {
+        val syncTag = "SyncProcess"
+        try {
+            // 1. Pega tarefas que estão na memória local (carregadas do disco pelo MainActivity)
+            val user = allUsers.find { it.id == userId }
+            val localTasks = user?.uTaskList ?: arrayListOf()
+
+            // 2. Envia (Sobe) as tarefas locais para o Supabase usando UPSERT
+            // Upsert atualiza se o ID já existe ou cria se não existe.
+            if (localTasks.isNotEmpty()) {
+                val tasksForSupabase = localTasks.map { task ->
+                    TarefaSupabase(
+                        id = task.id,
+                        titulo = task.titulo,
+                        status = task.status,
+                        userId = userId
+                    )
+                }
+                // onConflict="id" garante que não duplique
+                supabase.from("Tasks").upsert(tasksForSupabase) {
+                    onConflict = "id"
+                }
+                Log.d(syncTag, "Upload de tarefas locais realizado com sucesso.")
+            }
+
+            // 3. Baixa a versão oficial do servidor (que pode ter atualizações de outros lugares)
+            val remoteTasks = fetchTasksForUser(userId)
+
+            // 4. Atualiza a memória RAM com a versão final mesclada
+            val updatedUser = User(
+                id = userId,
+                username = "Usuário Sincronizado",
+                email = "",
+                uTaskList = remoteTasks
+            )
+
+            val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
+            if (existingUserIndex != -1) {
+                allUsers[existingUserIndex] = updatedUser
+            } else {
+                allUsers.add(updatedUser)
+            }
+
+            Log.d(syncTag, "Sincronização completa. Retornando lista atualizada.")
+            return remoteTasks // Retorna a lista para ser salva no disco
+
+        } catch (e: Exception) {
+            Log.e(syncTag, "Erro no Sync (Provavelmente sem internet): ${e.message}")
+            return null // Retorna null para indicar falha na conexão
+        }
+    }
+
     suspend fun login(email: String, password: String): User? {
         val loginTag = "LoginProcess"
         try {
@@ -94,83 +147,28 @@ object UserRepository {
     }
 
     suspend fun logout() {
-        supabase.auth.signOut()
-        Log.d("LogoutProcess", "Usuário deslogado com sucesso.")
+        val uId = supabase.auth.currentSessionOrNull()?.user?.id ?: "Desconhecido"
+        try {
+            supabase.auth.signOut()
+            Log.d("LogoutProcess", "Usuário ${uId} deslogado com sucesso.")
+        } catch (e: Exception) {
+            Log.e("LogoutProcess", "Erro ao deslogar (provavelmente offline).", e)
+        }
     }
 
-
-    // Versão antiga do login sem Supabase (Provavelmente havera reutilizacao de parte para poder implementar login offline)
-
-//    fun login(email: String, password: String): User? {
-//        val loginTag = "LoginProcess"
-//        val user = findUserByEmal(email)
-//
-//        if (user == null) {
-//            Log.e(loginTag, "Login Falhou, Usuario com email $email nao encontrado")
-//            return null
-//        }
-//
-//        if (password == user.passwordHash) {
-//            Log.d(loginTag, "Login bem sucedido para o usuario: ${user.username} (${user.id})")
-//            return user
-//        } else {
-//            Log.d(loginTag, "Erro no login para o usuario: ${user.username} (${user.id})")
-//            return null
-//        }
-//    }
+    // --- MÉTODOS DE AÇÃO (ATUALIZADOS PARA LOCAL FIRST) ---
 
     suspend fun toggleTaskStatusForUser(userId: String, taskId: String) {
-//        val userIndex = allUsers.indexOfFirst { it.id == userId }
-//        if (userIndex != -1) {
-//            val user = allUsers[userIndex]
-//            val taskIndex = user.uTaskList.indexOfFirst { it.id == taskId }
-//            if (taskIndex != -1) {
-//                val task = user.uTaskList[taskIndex]
-//                val updatedTask = task.copy(
-//                    status = if (task.status == "A fazer") "Feito" else "A fazer"
-//                )
-//                val newTaskList = user.uTaskList.toMutableList()
-//                newTaskList[taskIndex] = updatedTask
-//                allUsers[userIndex] = user.copy(uTaskList = newTaskList as ArrayList<Tarefa>)
-//            }
-//        }
-        val toggleTag = "TaskToggleStatus"
-        val user = allUsers.find { it.id == userId }
-        val task = user?.uTaskList?.find { it.id == taskId }
-
-        if (task == null) {
-            Log.e(toggleTag, "Tarefa $taskId não encontrada no cache local para o usuário $userId.")
-            return
-        }
+        val user = allUsers.find { it.id == userId } ?: return
+        val task = user.uTaskList.find { it.id == taskId } ?: return
 
         val newStatus = if (task.status == "A fazer") "Feito" else "A fazer"
+        val updatedTask = task.copy(status = newStatus)
 
-        try {
-            val statusUpdate = buildJsonObject {
-                put("status", JsonPrimitive(newStatus))
-            }
-
-            supabase.from("Tasks").update(statusUpdate) {
-                filter {
-                    eq("id", taskId)
-                    eq("userId", userId)
-                }
-            }
-            Log.d(toggleTag, "Status da tarefa $taskId atualizado para '$newStatus' no Supabase.")
-
-            val taskIndex = user.uTaskList.indexOfFirst { it.id == taskId }
-            if (taskIndex != -1) {
-                user.uTaskList[taskIndex] = user.uTaskList[taskIndex].copy(status = newStatus)
-                Log.d(toggleTag, "Status da tarefa $taskId atualizado no cache local.")
-            }
-
-        } catch (e: Exception) {
-            Log.e(toggleTag, "Erro ao atualizar status da tarefa $taskId no Supabase.", e)
-            throw e
-        }
+        // Reutiliza a lógica de update que já trata offline/online
+        updateTaskForUser(userId, updatedTask)
     }
 
-    // O suspend serve para marcar uma funçao como assincrona, permitindo que ela seja pausada e retomada sem bloquear a thread em que foi chamada.
     suspend fun createUser(newUsername: String, newEmail: String, newPassword: String) {
         if (newUsername.isNotBlank() && newEmail.isNotBlank() && newPassword.isNotBlank()) {
             val createTag = "Criado"
@@ -180,7 +178,6 @@ object UserRepository {
                 id = newId,
                 username = newUsername,
                 email = newEmail,
-//                passwordHash = newPassword,
                 uTaskList = arrayListOf()
             )
             try {
@@ -212,76 +209,64 @@ object UserRepository {
 
     suspend fun addTaskToUser(userId: String, task: Tarefa) {
         val addTaskTag = "AddTask"
+        // 1. Atualiza RAM primeiro (Instantâneo)
+        val user = allUsers.find { it.id == userId }
+        user?.uTaskList?.add(task)
+        Log.d(addTaskTag, "Tarefa adicionada na memória.")
 
-        val taskForSupabase = TarefaSupabase(
-            id = task.id,
-            titulo = task.titulo,
-            status = task.status,
-            userId = userId
-        )
-
+        // 2. Tenta Supabase (Online)
         try {
+            val taskForSupabase = TarefaSupabase(
+                id = task.id,
+                titulo = task.titulo,
+                status = task.status,
+                userId = userId
+            )
             supabase.from("Tasks").insert(taskForSupabase)
-            val user = allUsers.find { it.id == userId }
-            user?.uTaskList?.add(task)
-            Log.d(addTaskTag, "Tarefa ${task.id} adicionada com sucesso ao usuário $userId no Supabase e localmente.")
         } catch (e: Exception) {
-            Log.e(addTaskTag, "Erro ao salvar a tarefa ${task.id} no Supabase para o usuário $userId.", e)
-            throw e
+            // Se falhar (Offline), apenas loga. O dado está na RAM e será salvo no disco pelo MainActivity
+            Log.e(addTaskTag, "Sem internet: Tarefa salva apenas localmente por enquanto.", e)
         }
     }
 
     suspend fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
         val updateTag = "TaskUpdate"
+
+        // 1. Atualiza RAM primeiro
+        val user = allUsers.find { it.id == userId }
+        val taskIndex = user?.uTaskList?.indexOfFirst { it.id == updatedTask.id } ?: -1
+        if (taskIndex != -1) {
+            user?.uTaskList?.set(taskIndex, updatedTask)
+        }
+
+        // 2. Tenta Supabase
         try {
-            // 1. Prepara os dados para o Supabase. Não precisa mandar o ID.
             val updates = buildJsonObject {
                 put("titulo", kotlinx.serialization.json.JsonPrimitive(updatedTask.titulo))
                 put("status", kotlinx.serialization.json.JsonPrimitive(updatedTask.status))
-                // Adicione outras colunas que possam ser editadas aqui
             }
-
-            // 2. Atualiza a tarefa no banco de dados Supabase.
             supabase.from("Tasks").update(updates) {
-                filter {
-                    eq("id", updatedTask.id) // Encontra a tarefa pelo ID dela
-                    eq("userId", userId)     // Garante que o usuário é o dono da tarefa
-                }
-            }
-            Log.d(updateTag, "Tarefa ${updatedTask.id} atualizada no Supabase.")
-
-            // 3. Atualiza a tarefa na lista local (cache) para refletir a mudança na UI imediatamente.
-            val user = allUsers.find { it.id == userId }
-            user?.let {
-                val taskIndex = it.uTaskList.indexOfFirst { task -> task.id == updatedTask.id }
-                if (taskIndex != -1) {
-                    it.uTaskList[taskIndex] = updatedTask
-                    Log.d(updateTag, "Tarefa ${updatedTask.id} atualizada no cache local para o usuário $userId")
-                }
+                filter { eq("id", updatedTask.id); eq("userId", userId) }
             }
         } catch (e: Exception) {
-            Log.e(updateTag, "Erro ao atualizar a tarefa ${updatedTask.id} no Supabase.", e)
-            throw e // Lança o erro para a UI poder reagir
+            Log.e(updateTag, "Sem internet: Atualização salva localmente.", e)
         }
     }
 
     suspend fun deleteTaskForUser(userId: String, taskId: String) {
         val deleteTag = "TaskDelete"
+
+        // 1. Remove da RAM primeiro
+        val user = allUsers.find { it.id == userId }
+        user?.uTaskList?.removeAll { it.id == taskId }
+
+        // 2. Tenta Supabase
         try {
             supabase.from("Tasks").delete {
-                filter {
-                    eq("id", taskId)
-                    eq("userId", userId)
-                }
+                filter { eq("id", taskId); eq("userId", userId) }
             }
-            Log.d(deleteTag, "Tarefa $taskId deletada do Supabase para o usuário $userId")
-            // Remove a tarefa da lista local (cache)
-            val user = allUsers.find { it.id == userId }
-            user?.uTaskList?.removeAll { it.id == taskId }
-            Log.d(deleteTag, "Tarefa $taskId removida do cache local.")
         } catch (e: Exception) {
-            Log.e(deleteTag, "Erro ao deletar a tarefa $taskId no Supabase.", e)
-            throw e
+            Log.e(deleteTag, "Sem internet: Remoção salva localmente.", e)
         }
     }
 
@@ -324,5 +309,28 @@ object UserRepository {
         allUsers.clear()
         allUsers.addAll(loadedUsers)
         println("${loadedUsers.size} usuários carregados com sucesso de: ${file.absolutePath}")
+    }
+
+    // Injeção de dados do disco para a memória (usado pelo MainActivity)
+    fun loadFromCache(userId: String, cachedTasks: List<Tarefa>) {
+        val user = User(
+            id = userId,
+            username = "Modo Offline",
+            email = "",
+            uTaskList = ArrayList(cachedTasks)
+        )
+        val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
+        if (existingUserIndex != -1) {
+            allUsers[existingUserIndex] = user
+        } else {
+            allUsers.add(user)
+        }
+        Log.d("UserRepository", "Memória RAM restaurada via Armazenamento Local.")
+    }
+
+    // (Opcional) Mantive a reloadUserData antiga por compatibilidade,
+    // mas o app agora usa syncUserData preferencialmente.
+    suspend fun reloadUserData(userId: String): List<Tarefa>? {
+        return syncUserData(userId)
     }
 }
