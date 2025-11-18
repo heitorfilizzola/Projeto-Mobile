@@ -57,6 +57,7 @@ object UserRepository {
     // --- NOVA FUNÇÃO DE SYNC (ESSENCIAL PARA OFFLINE -> ONLINE) ---
     suspend fun syncUserData(userId: String): List<Tarefa>? {
         val syncTag = "SyncProcess"
+        val debugTag = "SupabaseDebug" // Tag para filtrar no Logcat
         try {
             // 1. Pega tarefas que estão na memória local (carregadas do disco pelo MainActivity)
             val user = allUsers.find { it.id == userId }
@@ -73,14 +74,21 @@ object UserRepository {
                         userId = userId
                     )
                 }
+
+                Log.d(debugTag, "SYNC: Tentando fazer UPSERT de ${tasksForSupabase.size} tarefas: $tasksForSupabase")
+
                 // onConflict="id" garante que não duplique
                 supabase.from("Tasks").upsert(tasksForSupabase) {
                     onConflict = "id"
                 }
-                Log.d(syncTag, "Upload de tarefas locais realizado com sucesso.")
+                Log.d(syncTag, "SYNC: Upload de tarefas locais realizado com sucesso.")
+                Log.d(debugTag, "SYNC: Sucesso no UPSERT.")
+            } else {
+                Log.d(debugTag, "SYNC: Nenhuma tarefa local para enviar.")
             }
 
             // 3. Baixa a versão oficial do servidor (que pode ter atualizações de outros lugares)
+            Log.d(debugTag, "SYNC: Baixando dados remotos (Pull)...")
             val remoteTasks = fetchTasksForUser(userId)
 
             // 4. Atualiza a memória RAM com a versão final mesclada
@@ -103,6 +111,7 @@ object UserRepository {
 
         } catch (e: Exception) {
             Log.e(syncTag, "Erro no Sync (Provavelmente sem internet): ${e.message}")
+            Log.e(debugTag, "SYNC FALHOU: ${e.message}", e)
             return null // Retorna null para indicar falha na conexão
         }
     }
@@ -209,6 +218,8 @@ object UserRepository {
 
     suspend fun addTaskToUser(userId: String, task: Tarefa) {
         val addTaskTag = "AddTask"
+        val debugTag = "SupabaseDebug"
+
         // 1. Atualiza RAM primeiro (Instantâneo)
         val user = allUsers.find { it.id == userId }
         user?.uTaskList?.add(task)
@@ -222,15 +233,21 @@ object UserRepository {
                 status = task.status,
                 userId = userId
             )
+
+            Log.d(debugTag, "ADD: Enviando tarefa para Supabase... $taskForSupabase")
             supabase.from("Tasks").insert(taskForSupabase)
+            Log.d(debugTag, "ADD: Tarefa inserida com SUCESSO no Supabase.")
+
         } catch (e: Exception) {
             // Se falhar (Offline), apenas loga. O dado está na RAM e será salvo no disco pelo MainActivity
             Log.e(addTaskTag, "Sem internet: Tarefa salva apenas localmente por enquanto.", e)
+            Log.e(debugTag, "ADD: Falha ao enviar para Supabase (Offline?): ${e.message}")
         }
     }
 
     suspend fun updateTaskForUser(userId: String, updatedTask: Tarefa) {
         val updateTag = "TaskUpdate"
+        val debugTag = "SupabaseDebug"
 
         // 1. Atualiza RAM primeiro
         val user = allUsers.find { it.id == userId }
@@ -245,16 +262,24 @@ object UserRepository {
                 put("titulo", kotlinx.serialization.json.JsonPrimitive(updatedTask.titulo))
                 put("status", kotlinx.serialization.json.JsonPrimitive(updatedTask.status))
             }
+
+            Log.d(debugTag, "UPDATE: Atualizando tarefa ${updatedTask.id} no Supabase: $updates")
+
             supabase.from("Tasks").update(updates) {
                 filter { eq("id", updatedTask.id); eq("userId", userId) }
             }
+
+            Log.d(debugTag, "UPDATE: Sucesso ao atualizar no Supabase.")
+
         } catch (e: Exception) {
             Log.e(updateTag, "Sem internet: Atualização salva localmente.", e)
+            Log.e(debugTag, "UPDATE: Falha ao enviar atualização (Offline?): ${e.message}")
         }
     }
 
     suspend fun deleteTaskForUser(userId: String, taskId: String) {
         val deleteTag = "TaskDelete"
+        val debugTag = "SupabaseDebug"
 
         // 1. Remove da RAM primeiro
         val user = allUsers.find { it.id == userId }
@@ -262,11 +287,17 @@ object UserRepository {
 
         // 2. Tenta Supabase
         try {
+            Log.d(debugTag, "DELETE: Removendo tarefa $taskId do Supabase...")
+
             supabase.from("Tasks").delete {
                 filter { eq("id", taskId); eq("userId", userId) }
             }
+
+            Log.d(debugTag, "DELETE: Sucesso ao remover do Supabase.")
+
         } catch (e: Exception) {
             Log.e(deleteTag, "Sem internet: Remoção salva localmente.", e)
+            Log.e(debugTag, "DELETE: Falha ao remover (Offline?): ${e.message}")
         }
     }
 

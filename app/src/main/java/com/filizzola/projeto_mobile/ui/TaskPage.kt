@@ -39,16 +39,19 @@ import kotlinx.coroutines.launch
 fun TaskListScreen(
     navController: NavController,
     userId: String,
+    updateTrigger: Int, // Gatilho para atualizar a lista
     onDeleteTask: (taskId: String) -> Unit,
-    onToggleTaskStatus: (task: Tarefa) -> Unit,
+    onStatusChange: (task: Tarefa) -> Unit, // <--- MUDANÇA: Agora recebe a tarefa alterada
     onLogout: () -> Unit
 ) {
     var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    // Observando a lista de forma mais segura para reagir a mudanças
     val user = UserRepository.allUsers.find { it.id == userId }
-    val tarefas = user?.uTaskList ?: emptyList()
+    // Atualiza a lista quando o gatilho mudar
+    val tarefas by remember(updateTrigger, user) {
+        derivedStateOf { user?.uTaskList?.toList() ?: emptyList() }
+    }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -70,17 +73,10 @@ fun TaskListScreen(
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    try {
-                                        UserRepository.logout()
-                                    } catch (e: Exception) {
-                                        Log.e("LogoutError", "Logout offline", e)
-                                    }
+                                    try { UserRepository.logout() } catch (e: Exception) {}
                                     onLogout()
-                                    Toast.makeText(context, "Saiu da conta", Toast.LENGTH_SHORT).show()
                                     navController.navigate("login") {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            inclusive = true
-                                        }
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                     }
                                 }
                             }
@@ -155,7 +151,6 @@ fun TaskListScreen(
                     }
                 }
             ) { telaAlvo ->
-                // Filtra a lista baseada na aba atual
                 val tarefasFiltradas = tarefas.filter { it.status == telaAlvo }
 
                 LazyColumn(
@@ -177,8 +172,7 @@ fun TaskListScreen(
                         )
                     }
 
-                    // CORREÇÃO CRUCIAL: Usar 'items' com 'key'.
-                    // Isso impede que o Compose confunda os itens ao deletar/mover.
+                    // USO CORRETO DA KEY PARA EVITAR BUGS VISUAIS
                     items(
                         items = tarefasFiltradas,
                         key = { it.id }
@@ -188,7 +182,7 @@ fun TaskListScreen(
                             isToDoList = (telaAlvo == "A fazer"),
                             navController = navController,
                             onDeleteTask = onDeleteTask,
-                            onToggleTaskStatus = onToggleTaskStatus
+                            onStatusChange = onStatusChange // Passa a nova função
                         )
                     }
                 }
@@ -204,20 +198,20 @@ fun TaskItem(
     isToDoList: Boolean,
     navController: NavController,
     onDeleteTask: (taskId: String) -> Unit,
-    onToggleTaskStatus: (task: Tarefa) -> Unit
+    onStatusChange: (task: Tarefa) -> Unit // Recebe função de status explícito
 ) {
-    // Estado do swipe
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (isToDoList) {
                 // --- LISTA "A FAZER" ---
                 when (it) {
-                    SwipeToDismissBoxValue.EndToStart -> { // Dir -> Esq (Vermelho)
+                    SwipeToDismissBoxValue.EndToStart -> { // Apagar
                         onDeleteTask(tarefa.id)
                         true
                     }
-                    SwipeToDismissBoxValue.StartToEnd -> { // Esq -> Dir (Verde)
-                        onToggleTaskStatus(tarefa)
+                    SwipeToDismissBoxValue.StartToEnd -> { // Concluir
+                        // CORREÇÃO: Define explicitamente "Feito". Se rodar 2x, continua "Feito".
+                        onStatusChange(tarefa.copy(status = "Feito"))
                         true
                     }
                     else -> false
@@ -225,12 +219,13 @@ fun TaskItem(
             } else {
                 // --- LISTA "FEITO" ---
                 when (it) {
-                    SwipeToDismissBoxValue.StartToEnd -> { // Esq -> Dir (Azul/Voltar)
-                        onToggleTaskStatus(tarefa) // Ação de voltar para "A Fazer"
+                    SwipeToDismissBoxValue.StartToEnd -> { // ESQ -> DIR (Apagar)
+                        onDeleteTask(tarefa.id)
                         true
                     }
-                    SwipeToDismissBoxValue.EndToStart -> { // Dir -> Esq (Vermelho/Apagar)
-                        onDeleteTask(tarefa.id)
+                    SwipeToDismissBoxValue.EndToStart -> { // DIR -> ESQ (Retornar)
+                        // CORREÇÃO: Define explicitamente "A fazer".
+                        onStatusChange(tarefa.copy(status = "A fazer"))
                         true
                     }
                     else -> false
@@ -247,14 +242,14 @@ fun TaskItem(
             val color by animateColorAsState(
                 if (isToDoList) {
                     when (direction) {
-                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde (Concluir)
-                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho (Apagar)
+                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde
+                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho
                         else -> Color.Transparent
                     }
                 } else {
                     when (direction) {
-                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1C6FB7) // Azul (Retornar)
-                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho (Apagar)
+                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFFB71C1C) // Vermelho (Apagar)
+                        SwipeToDismissBoxValue.EndToStart -> Color(0xFF1C6FB7) // Azul (Retornar)
                         else -> Color.Transparent
                     }
                 },
@@ -269,8 +264,8 @@ fun TaskItem(
                 }
             } else {
                 when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Restore // Ícone de voltar
-                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
+                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
+                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Restore // Ícone de voltar
                     else -> null
                 }
             }
@@ -294,12 +289,7 @@ fun TaskItem(
                 contentAlignment = alignment
             ) {
                 icon?.let {
-                    Icon(
-                        imageVector = it,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.scale(scale)
-                    )
+                    Icon(it, contentDescription = null, tint = Color.White, modifier = Modifier.scale(scale))
                 }
             }
         }
@@ -309,9 +299,7 @@ fun TaskItem(
             shape = MaterialTheme.shapes.large
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -325,7 +313,6 @@ fun TaskItem(
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(
