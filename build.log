@@ -1,0 +1,190 @@
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/heitor/.gradle/wrapper/dists/gradle-8.13-bin/5xuhj0ry160q40clulazy9h7d/gradle-8.13/lib/native-platform-0.22-milestone-28.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+2025-11-21T18:20:38.220-0300 [INFO] [org.gradle.internal.nativeintegration.services.NativeServices] Initialized native services in: /home/heitor/.gradle/native
+2025-11-21T18:20:38.283-0300 [INFO] [org.gradle.internal.nativeintegration.services.NativeServices] Initialized jansi services in: /home/heitor/.gradle/native
+2025-11-21T18:20:38.322-0300 [LIFECYCLE] [org.gradle.launcher.cli.DebugLoggerWarningAction] 
+#############################################################################
+   WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   Debug level logging will leak security sensitive information!
+
+   For more details, please refer to https://docs.gradle.org/8.13/userguide/logging.html#sec:debug_security in the Gradle documentation.
+#############################################################################
+
+2025-11-21T18:20:38.380-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface wlan0
+2025-11-21T18:20:38.380-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2025-11-21T18:20:38.380-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:513a:c994:bd6:8332%wlan0
+2025-11-21T18:20:38.381-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /192.168.68.106
+2025-11-21T18:20:38.381-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface lo
+2025-11-21T18:20:38.381-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? true
+2025-11-21T18:20:38.381-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /0:0:0:0:0:0:0:1%lo
+2025-11-21T18:20:38.381-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /127.0.0.1
+2025-11-21T18:20:38.402-0300 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for metadata, path /home/heitor/.gradle/caches/8.13/jvms/metadata.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@67b9b51a
+2025-11-21T18:20:38.448-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Executing build a0507a30-0ce8-4f8a-97d0-9c1fa39caae0 in daemon client {pid=43884}
+2025-11-21T18:20:38.451-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire shared lock on daemon addresses registry.
+2025-11-21T18:20:38.452-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2025-11-21T18:20:38.454-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2025-11-21T18:20:38.455-0300 [INFO] [org.gradle.launcher.daemon.client.DefaultDaemonConnector] Found daemon DaemonInfo{pid=34091, address=[5133b553-8bbe-4482-9594-8fe01ea451db port:33745, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763759837453, context=DefaultDaemonContext[uid=b22b6195-db25-4e3e-9b4e-1f4d41b1b438,javaHome=/var/lib/snapd/snap/android-studio/209/jbr,javaVersion=21,javaVendor=JetBrains s.r.o.,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=34091,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]} however its context does not match the desired criteria.
+JVM is incompatible.
+Wanted: DaemonRequestContext{jvmCriteria=/usr/lib/jvm/java-25-openjdk (no JDK specified, using current Java home), daemonOpts=[-Xmx2048m, -Dfile.encoding=UTF-8, -Duser.country=US, -Duser.language=en, -Duser.variant], applyInstrumentationAgent=true, nativeServicesMode=ENABLED, priority=NORMAL}
+Actual: DefaultDaemonContext[uid=b22b6195-db25-4e3e-9b4e-1f4d41b1b438,javaHome=/var/lib/snapd/snap/android-studio/209/jbr,javaVersion=21,javaVendor=JetBrains s.r.o.,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=34091,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]
+
+  Looking for a different daemon...
+2025-11-21T18:20:38.456-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Attempting to connect to [7b1e70da-32a6-42fe-9adb-e28b79226e66 port:41243, addresses:[/127.0.0.1]].
+2025-11-21T18:20:38.456-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Trying to connect to address /127.0.0.1.
+2025-11-21T18:20:38.457-0300 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Connected to address /127.0.0.1:41243.
+2025-11-21T18:20:38.462-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Connected to daemon DaemonInfo{pid=42857, address=[7b1e70da-32a6-42fe-9adb-e28b79226e66 port:41243, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763760030595, context=DefaultDaemonContext[uid=5f11ba67-fee5-4d70-91c1-f3bf0cca79c1,javaHome=/usr/lib/jvm/java-25-openjdk,javaVersion=25,javaVendor=Arch Linux,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=42857,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]}. Dispatching request Build{id=a0507a30-0ce8-4f8a-97d0-9c1fa39caae0, currentDir=/home/heitor/Desktop/Projeto-Mobile}.
+2025-11-21T18:20:38.462-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 3: dispatching class org.gradle.launcher.daemon.protocol.Build
+2025-11-21T18:20:38.470-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Received result org.gradle.launcher.daemon.protocol.BuildStarted@241e8ea6 from daemon DaemonInfo{pid=42857, address=[7b1e70da-32a6-42fe-9adb-e28b79226e66 port:41243, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763760030595, context=DefaultDaemonContext[uid=5f11ba67-fee5-4d70-91c1-f3bf0cca79c1,javaHome=/usr/lib/jvm/java-25-openjdk,javaVersion=25,javaVendor=Arch Linux,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=42857,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]} (build should be starting).
+2025-11-21T18:20:38.470-0300 [INFO] [org.gradle.launcher.daemon.server.exec.LogToClient] The client will now receive all logging from the daemon (pid: 42857). The daemon log file: /home/heitor/.gradle/daemon/8.13/daemon-42857.out.log
+2025-11-21T18:20:38.470-0300 [INFO] [org.gradle.launcher.daemon.server.exec.LogAndCheckHealth] Starting 5th build in daemon [uptime: 1 mins 0.918 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 2 GiB]
+2025-11-21T18:20:38.470-0300 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has started executing the build.
+2025-11-21T18:20:38.471-0300 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] Executing build with daemon context: DefaultDaemonContext[uid=5f11ba67-fee5-4d70-91c1-f3bf0cca79c1,javaHome=/usr/lib/jvm/java-25-openjdk,javaVersion=25,javaVendor=Arch Linux,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=42857,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]
+2025-11-21T18:20:38.472-0300 [INFO] [org.gradle.internal.work.DefaultWorkerLeaseService] Using 12 worker leases.
+2025-11-21T18:20:38.472-0300 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker: acquired lock on worker lease
+2025-11-21T18:20:38.472-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Run build' started
+2025-11-21T18:20:38.475-0300 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for fileHashes, path /home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes/fileHashes.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@6190e249
+2025-11-21T18:20:38.475-0300 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for file hash cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes)
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on file hash cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes).
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on file hash cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes).
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for outputFiles, path /home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup/outputFiles.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@4f69da8e
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for Build Output Cleanup Cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup)
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on Build Output Cleanup Cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup).
+2025-11-21T18:20:38.476-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on Build Output Cleanup Cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup).
+2025-11-21T18:20:38.477-0300 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for resourceHashesCache, path /home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes/resourceHashesCache.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@6190e249
+2025-11-21T18:20:38.478-0300 [INFO] [org.gradle.internal.watch.registry.impl.WatchableHierarchies] Now considering [/home/heitor/Desktop/Projeto-Mobile] as hierarchies to watch
+2025-11-21T18:20:38.478-0300 [INFO] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] Watching the file system is configured to be enabled if available
+2025-11-21T18:20:38.478-0300 [DEBUG] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] Watching the file system computed to be enabled if available
+2025-11-21T18:20:38.478-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build started for file system watching' started
+2025-11-21T18:20:38.478-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected proc: /proc from proc (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected sysfs: /sys from sys (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected devtmpfs: /dev from dev (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tmpfs: /run from run (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected efivarfs: /sys/firmware/efi/efivars from efivarfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected btrfs: / from /dev/nvme0n1p2 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected securityfs: /sys/kernel/security from securityfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tmpfs: /dev/shm from tmpfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected devpts: /dev/pts from devpts (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected cgroup2: /sys/fs/cgroup from cgroup2 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected pstore: /sys/fs/pstore from none (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected bpf: /sys/fs/bpf from bpf (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected autofs: /proc/sys/fs/binfmt_misc from systemd-1 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected debugfs: /sys/kernel/debug from debugfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected hugetlbfs: /dev/hugepages from hugetlbfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tracefs: /sys/kernel/tracing from tracefs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected configfs: /sys/kernel/config from configfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tmpfs: /run/credentials/systemd-journald.service from tmpfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected mqueue: /dev/mqueue from mqueue (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected fusectl: /sys/fs/fuse/connections from fusectl (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tmpfs: /tmp from tmpfs (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/intellij-idea-ultimate/690 from /dev/loop8 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/core22/2139 from /dev/loop4 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/hello-world/29 from /dev/loop6 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/core22/2163 from /dev/loop5 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/android-studio/205 from /dev/loop0 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/core/17247 from /dev/loop3 (remote: false)
+2025-11-21T18:20:38.479-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/android-studio/209 from /dev/loop1 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected vfat: /boot from /dev/nvme0n1p1 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/snapd/25202 from /dev/loop7 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/core/17212 from /dev/loop2 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/intellij-idea-ultimate/682 from /dev/loop9 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected squashfs: /var/lib/snapd/snap/snapd/25577 from /dev/loop10 (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected binfmt_misc: /proc/sys/fs/binfmt_misc from binfmt_misc (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected tmpfs: /run/user/1000 from tmpfs (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected fuse.gvfsd-fuse: /run/user/1000/gvfs from gvfsd-fuse (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected fuse.portal: /run/user/1000/doc from portal (remote: false)
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Build started for file system watching'
+2025-11-21T18:20:38.480-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build started for file system watching' completed
+2025-11-21T18:20:38.480-0300 [INFO] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] File system watching is active
+2025-11-21T18:20:38.481-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build' started
+2025-11-21T18:20:38.481-0300 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found env project properties: []
+2025-11-21T18:20:38.481-0300 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found system project properties: []
+2025-11-21T18:20:38.481-0300 [DEBUG] [org.gradle.initialization.DefaultSettingsLoader] Loading build definition for build: ':'
+2025-11-21T18:20:38.481-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings' started
+2025-11-21T18:20:38.482-0300 [INFO] [org.gradle.internal.buildevents.BuildLogger] Starting Build
+2025-11-21T18:20:38.482-0300 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Gradle user home: /home/heitor/.gradle
+2025-11-21T18:20:38.482-0300 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Current dir: /home/heitor/Desktop/Projeto-Mobile
+2025-11-21T18:20:38.482-0300 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Settings file: null
+2025-11-21T18:20:38.482-0300 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Build file: null
+2025-11-21T18:20:38.484-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file 'settings.gradle.kts' to settings 'Projeto-Mobile'' started
+2025-11-21T18:20:38.484-0300 [DEBUG] [org.gradle.kotlin.dsl.provider.KotlinScriptPlugin] Applying Kotlin script to settings 'Projeto-Mobile'
+2025-11-21T18:20:38.487-0300 [DEBUG] [org.gradle.api.internal.runtimeshaded.RuntimeShadedJarFactory] Using Gradle runtime shaded JAR file: /home/heitor/.gradle/caches/8.13/generated-gradle-jars/gradle-api-8.13.jar
+2025-11-21T18:20:38.488-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.vfs.impl.AbstractVirtualFileSystem] Invalidating VFS paths: [/home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666]
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Snapshot inputs and outputs before executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' started
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep] Implementation for Kotlin DSL script compilation (Settings/TopLevel/stage1): org.gradle.kotlin.dsl.provider.StandardKotlinScriptEvaluator$KotlinScriptCompilationAndInstrumentation@b9e972bb44477aad8c2e6e20bc352516
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep] Additional implementations for Kotlin DSL script compilation (Settings/TopLevel/stage1): []
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Snapshot inputs and outputs before executing Kotlin DSL script compilation (Settings/TopLevel/stage1)'
+2025-11-21T18:20:38.489-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Snapshot inputs and outputs before executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' completed
+2025-11-21T18:20:38.489-0300 [INFO] [org.gradle.internal.execution.steps.AbstractResolveCachingStateStep] Caching disabled for Kotlin DSL script compilation (Settings/TopLevel/stage1) because:
+  Build cache is disabled
+2025-11-21T18:20:38.490-0300 [DEBUG] [org.gradle.internal.vfs.impl.AbstractVirtualFileSystem] Invalidating VFS paths: [/home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/instrumented/classes, /home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/reports/gradle-intercepted-methods.report]
+2025-11-21T18:20:38.490-0300 [DEBUG] [org.gradle.internal.execution.steps.PreCreateOutputParentsStep] Ensuring directory exists for property instrumentedOutput at /home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/instrumented/classes
+2025-11-21T18:20:38.490-0300 [DEBUG] [org.gradle.internal.execution.steps.PreCreateOutputParentsStep] Ensuring parent directory exists for property propertyUpgradeReportOutput at /home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/reports/gradle-intercepted-methods.report
+2025-11-21T18:20:38.490-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' started
+2025-11-21T18:20:38.490-0300 [DEBUG] [org.gradle.kotlin.dsl.execution.Interpreter] Compiling Settings/TopLevel/stage1 from settings file '/home/heitor/Desktop/Projeto-Mobile/settings.gradle.kts'
+2025-11-21T18:20:38.491-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Compile script settings.gradle.kts (CLASSPATH)' started
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Compile script settings.gradle.kts (CLASSPATH)'
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Compile script settings.gradle.kts (CLASSPATH)' completed
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Executing Kotlin DSL script compilation (Settings/TopLevel/stage1)'
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' completed
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.vfs.impl.AbstractVirtualFileSystem] Invalidating VFS paths: [/home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/instrumented/classes, /home/heitor/.gradle/caches/8.13/kotlin-dsl/scripts/135617ef6c2ac5ba8366ba0475cdcd47-ac6881ad-7b3c-428d-841a-e9c7a2e4e666/reports/gradle-intercepted-methods.report]
+2025-11-21T18:20:38.494-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Snapshot outputs after executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' started
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Snapshot outputs after executing Kotlin DSL script compilation (Settings/TopLevel/stage1)'
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Snapshot outputs after executing Kotlin DSL script compilation (Settings/TopLevel/stage1)' completed
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply settings file 'settings.gradle.kts' to settings 'Projeto-Mobile''
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file 'settings.gradle.kts' to settings 'Projeto-Mobile'' completed
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Evaluate settings'
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings' completed
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Load build'
+2025-11-21T18:20:38.495-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build' completed
+2025-11-21T18:20:38.496-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Finish root build tree' started
+2025-11-21T18:20:38.496-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Finish root build tree'
+2025-11-21T18:20:38.497-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Finish root build tree' completed
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] FAILURE: Build failed with an exception.
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] * What went wrong:
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 25.0.1
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] * Try:
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Run with --stacktrace option to get the stack trace.
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Run with --scan to get full insights.
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Get more help at https://help.gradle.org.
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildResultLogger] 
+2025-11-21T18:20:38.497-0300 [ERROR] [org.gradle.internal.buildevents.BuildResultLogger] BUILD FAILED in 729ms
+2025-11-21T18:20:38.497-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build finished for file system watching' started
+2025-11-21T18:20:38.497-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Build finished for file system watching'
+2025-11-21T18:20:38.497-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build finished for file system watching' completed
+2025-11-21T18:20:38.498-0300 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for Build Output Cleanup Cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup)
+2025-11-21T18:20:38.498-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on Build Output Cleanup Cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/buildOutputCleanup).
+2025-11-21T18:20:38.498-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Run build'
+2025-11-21T18:20:38.499-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Run build' completed
+2025-11-21T18:20:38.499-0300 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker: released lock on worker lease
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.deployment.internal.DefaultDeploymentRegistry] Stopping 0 deployment handles
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.deployment.internal.DefaultDeploymentRegistry] Stopped deployment handles
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for file hash cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes)
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on file hash cache (/home/heitor/Desktop/Projeto-Mobile/.gradle/8.13/fileHashes).
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in /home/heitor/Desktop/Projeto-Mobile/.gradle' started
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Deleting unused version-specific caches in /home/heitor/Desktop/Projeto-Mobile/.gradle'
+2025-11-21T18:20:38.500-0300 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in /home/heitor/Desktop/Projeto-Mobile/.gradle' completed
+2025-11-21T18:20:38.501-0300 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has finished executing the build.
+2025-11-21T18:20:38.519-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 3: dispatching class org.gradle.launcher.daemon.protocol.CloseInput
+2025-11-21T18:20:38.520-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Received result Success[value=org.gradle.launcher.exec.BuildActionResult@53142455] from daemon DaemonInfo{pid=42857, address=[7b1e70da-32a6-42fe-9adb-e28b79226e66 port:41243, addresses:[/127.0.0.1]], state=Idle, lastBusy=1763760030595, context=DefaultDaemonContext[uid=5f11ba67-fee5-4d70-91c1-f3bf0cca79c1,javaHome=/usr/lib/jvm/java-25-openjdk,javaVersion=25,javaVendor=Arch Linux,daemonRegistryDir=/home/heitor/.gradle/daemon,pid=42857,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-Xmx2048m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]} (build should be done).
+2025-11-21T18:20:38.520-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 3: dispatching class org.gradle.launcher.daemon.protocol.Finished
+2025-11-21T18:20:38.520-0300 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 3: connection stop
+2025-11-21T18:20:38.521-0300 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache cache directory jvms (/home/heitor/.gradle/caches/8.13/jvms) was closed 0 times.
+2025-11-21T18:20:38.521-0300 [LIFECYCLE] [org.gradle.launcher.cli.DebugLoggerWarningAction] 
+#############################################################################
+   WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   Debug level logging will leak security sensitive information!
+
+   For more details, please refer to https://docs.gradle.org/8.13/userguide/logging.html#sec:debug_security in the Gradle documentation.
+#############################################################################
+

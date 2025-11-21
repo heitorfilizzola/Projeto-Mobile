@@ -51,18 +51,43 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.filizzola.projeto_mobile.viewmodel.RegisterViewModel
+import com.filizzola.projeto_mobile.viewmodel.RegistrationState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
+
 @Composable
-fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, onLoginBtnClick: () -> Unit) {
-    var usernameInput by remember { mutableStateOf("") }
-    var emailInput by remember { mutableStateOf("") }
-    var passInput by remember { mutableStateOf("")}
-    var passConfirmInput by remember { mutableStateOf("") }
-    var borderGray = Color(0xFFCACACA)
+fun RegisterScreen(
+    modifier: Modifier = Modifier,
+    onRegisterClick: () -> Unit,
+    onLoginBtnClick: () -> Unit,
+    registerViewModel: RegisterViewModel = viewModel()
+) {
+    val usernameInput by registerViewModel.username.collectAsState()
+    val emailInput by registerViewModel.email.collectAsState()
+    val passInput by registerViewModel.password.collectAsState()
+    val passConfirmInput by registerViewModel.confirmPassword.collectAsState()
+    val registrationState by registerViewModel.registrationState.collectAsState()
 
+    val borderGray = Color(0xFFCACACA)
     val context = LocalContext.current
-
     val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
+
+    LaunchedEffect(registrationState) {
+        when (val state = registrationState) {
+            is RegistrationState.Success -> {
+                Toast.makeText(context, "Usuário registrado com sucesso!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Verifique sua caixa de entrada para ativar sua conta.", Toast.LENGTH_LONG).show()
+                onRegisterClick()
+            }
+            is RegistrationState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+            }
+            else -> {}
+        }
+    }
 
     bgImage(
         modifier = Modifier
@@ -128,7 +153,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                             imeAction = ImeAction.Next
                         ),
                         value = usernameInput,
-                        onValueChanged = { usernameInput = it },
+                        onValueChanged = { registerViewModel.onUsernameChange(it) },
                         modifier = Modifier
                             .padding(bottom = 16.dp)
                             .fillMaxWidth()
@@ -147,7 +172,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                             imeAction = ImeAction.Next
                         ),
                         value = emailInput,
-                        onValueChanged = { emailInput = it },
+                        onValueChanged = { registerViewModel.onEmailChange(it) },
                         modifier = Modifier
                             .padding(bottom = 16.dp)
                             .fillMaxWidth()
@@ -166,7 +191,7 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                             imeAction = ImeAction.Next
                         ),
                         value = passInput,
-                        onValueChanged = { passInput = it },
+                        onValueChanged = { registerViewModel.onPasswordChange(it) },
                         modifier = Modifier
                             .padding(bottom = 16.dp)
                             .fillMaxWidth()
@@ -185,65 +210,16 @@ fun RegisterScreen(modifier: Modifier = Modifier, onRegisterClick: () -> Unit, o
                             imeAction = ImeAction.Send
                         ),
                         value = passConfirmInput,
-                        onValueChanged = { passConfirmInput = it },
+                        onValueChanged = { registerViewModel.onConfirmPasswordChange(it) },
                         modifier = Modifier
                             .padding(bottom = 16.dp)
                             .fillMaxWidth()
                     )
 
-                    val scope = rememberCoroutineScope() // Gerenciamento de corrotinas
                     Button(
-                        onClick = {
-                            scope.launch { // Lança corrotina
-
-                                // Validação dos campos de entrada
-                                val areFieldsBlank =
-                                    usernameInput.isBlank() || emailInput.isBlank() || passInput.isBlank()
-                                val doPasswordsMatch = passInput == passConfirmInput
-
-                                if (!doPasswordsMatch) {
-                                    Toast.makeText(
-                                        context,
-                                        "As senhas não conferem!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else if (areFieldsBlank) {
-                                    Toast.makeText(
-                                        context,
-                                        "Por favor, preencha todos os campos.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    try {
-                                        // A execucao pausa aq sem congelar a tela
-                                        UserRepository.createUser(
-                                            newUsername = usernameInput,
-                                            newEmail = emailInput,
-                                            newPassword = passInput
-                                        )
-                                        // Retoma quando createuser termina
-                                    } catch (e: Exception) {
-                                    }
-                                }
-
-                                val userFile = File(context.filesDir, "users.json")
-                                UserRepository.saveUsersToFile(userFile)
-
-                                Toast.makeText(
-                                    context,
-                                    "Usuário registrado com sucesso!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-
-                                Toast.makeText(
-                                    context,
-                                    "Verifique sua caixa de entrada para ativar sua conta.",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                                onRegisterClick()
-                            }
-                        },
-                        modifier = modifier.padding(16.dp)
+                        onClick = { registerViewModel.register() },
+                        modifier = modifier.padding(16.dp),
+                        enabled = registrationState != RegistrationState.Loading
                     ) {
                         Text(text = "Register", fontSize = 24.sp)
                     }

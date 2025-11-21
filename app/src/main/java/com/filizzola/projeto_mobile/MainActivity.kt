@@ -188,21 +188,6 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                         TaskListScreen(
                             navController = navController,
                             userId = userId,
-                            updateTrigger = triggerRecomposition,
-                            onDeleteTask = { taskIdToDelete ->
-                                coroutineScope.launch {
-                                    try { UserRepository.deleteTaskForUser(userId, taskIdToDelete) } catch (e: Exception) {}
-                                    syncManager.persistCurrentData(userId)
-                                    triggerRecomposition++
-                                }
-                            },
-                            onStatusChange = { taskUpdated ->
-                                coroutineScope.launch {
-                                    try { UserRepository.updateTaskForUser(userId, taskUpdated) } catch (e: Exception) {}
-                                    syncManager.persistCurrentData(userId)
-                                    triggerRecomposition++
-                                }
-                            },
                             onLogout = {
                                 coroutineScope.launch {
                                     loginManager.clearLoggedUser()
@@ -219,14 +204,6 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                     backStackEntry.arguments?.getString("userId")?.let { userId ->
                         AddTaskScreen(
                             navController = navController,
-                            onAddTask = { novaTarefa ->
-                                coroutineScope.launch {
-                                    try { UserRepository.addTaskToUser(userId, novaTarefa) } catch (e: Exception) {}
-                                    syncManager.persistCurrentData(userId)
-                                    triggerRecomposition++
-                                    navController.popBackStack()
-                                }
-                            },
                             userId = userId
                         )
                     }
@@ -244,14 +221,6 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                     if (userId != null) {
                         EditTaskScreen(
                             navController = navController,
-                            onEditTask = { tarefaAtualizada ->
-                                coroutineScope.launch {
-                                    try { UserRepository.updateTaskForUser(userId, tarefaAtualizada) } catch (e: Exception) {}
-                                    syncManager.persistCurrentData(userId)
-                                    triggerRecomposition++
-                                    navController.popBackStack()
-                                }
-                            },
                             userId = userId,
                             taskId = taskId
                         )

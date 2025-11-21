@@ -56,10 +56,13 @@ import com.filizzola.projeto_mobile.R
 import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.filizzola.projeto_mobile.viewmodel.LoginViewModel
+import com.filizzola.projeto_mobile.viewmodel.LoginState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
 
 /**
  * Composable para exibir a imagem de fundo da tela.
@@ -80,17 +83,31 @@ fun GreetingLogin(
     modifier: Modifier = Modifier,
     onLoginSuccess: (User) -> Unit,
     onNavigateToRegister: () -> Unit,
-    onClickTaski: () -> Unit
+    onClickTaski: () -> Unit,
+    loginViewModel: LoginViewModel = viewModel()
 ) {
-    var emailInput by remember { mutableStateOf("") }
-    var passInput by remember { mutableStateOf("") }
-    val borderGray = Color(0xFFCACACA)
+    val emailInput by loginViewModel.email.collectAsState()
+    val passInput by loginViewModel.password.collectAsState()
+    val loginState by loginViewModel.loginState.collectAsState()
 
+    val borderGray = Color(0xFFCACACA)
     val context = LocalContext.current
     val appIcons = Icons.Outlined
     val bgColor = MaterialTheme.colorScheme.background
 
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(loginState) {
+        when (val state = loginState) {
+            is LoginState.Success -> {
+                Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
+                Log.d("loginDone", "Login com sucesso do usuario ${state.user}")
+                onLoginSuccess(state.user)
+            }
+            is LoginState.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
+            }
+            else -> {}
+        }
+    }
 
     bgImage()
 
@@ -135,7 +152,7 @@ fun GreetingLogin(
                         imeAction = ImeAction.Next
                     ),
                     value = emailInput,
-                    onValueChanged = { emailInput = it },
+                    onValueChanged = { loginViewModel.onEmailChange(it) },
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .fillMaxWidth()
@@ -149,7 +166,7 @@ fun GreetingLogin(
                         imeAction = ImeAction.Send
                     ),
                     value = passInput,
-                    onValueChanged = { passInput = it },
+                    onValueChanged = { loginViewModel.onPasswordChange(it) },
                     isPassword = true,
                     modifier = Modifier
                         .padding(bottom = 16.dp)
@@ -157,22 +174,9 @@ fun GreetingLogin(
                 )
 
                 Button(
-                    onClick = {
-                        if (emailInput.isBlank() || passInput.isBlank()) {
-                            Toast.makeText(context, "Preencha todos os campos", Toast.LENGTH_SHORT).show()
-                        } else {
-                            scope.launch {
-                            val loggedInUser = UserRepository.login(emailInput, passInput)
-                            if (loggedInUser != null) {
-                                Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
-                                Log.d("loginDone", "Login com sucesso do usuario $loggedInUser")
-                                onLoginSuccess(loggedInUser)
-                            } else {
-                                Toast.makeText(context, "Email ou senha incorretos.", Toast.LENGTH_SHORT).show()
-                            }
-                        }}
-                    },
-                    modifier = Modifier.padding(top = 16.dp)
+                    onClick = { loginViewModel.login() },
+                    modifier = Modifier.padding(top = 16.dp),
+                    enabled = loginState != LoginState.Loading
                 ) {
                     Text(text = "Login", fontSize = 24.sp)
                 }

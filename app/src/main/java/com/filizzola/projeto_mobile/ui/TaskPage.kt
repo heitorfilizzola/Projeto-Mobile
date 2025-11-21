@@ -33,28 +33,27 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.filizzola.projeto_mobile.viewmodel.TaskViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListScreen(
     navController: NavController,
     userId: String,
-    updateTrigger: Int, // Gatilho para atualizar a lista
-    onDeleteTask: (taskId: String) -> Unit,
-    onStatusChange: (task: Tarefa) -> Unit, // <--- MUDANÇA: Agora recebe a tarefa alterada
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    taskViewModel: TaskViewModel = viewModel()
 ) {
     var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
-    val user = UserRepository.allUsers.find { it.id == userId }
-    // Atualiza a lista quando o gatilho mudar
-    val tarefas by remember(updateTrigger, user) {
-        derivedStateOf { user?.uTaskList?.toList() ?: emptyList() }
+    LaunchedEffect(userId) {
+        taskViewModel.loadTasks(userId)
     }
 
+    val tarefas by taskViewModel.tasks.collectAsState()
+
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -73,7 +72,7 @@ fun TaskListScreen(
                         IconButton(
                             onClick = {
                                 scope.launch {
-                                    try { UserRepository.logout() } catch (e: Exception) {}
+                                    taskViewModel.logout()
                                     onLogout()
                                     navController.navigate("login") {
                                         popUpTo(navController.graph.startDestinationId) { inclusive = true }
@@ -172,7 +171,6 @@ fun TaskListScreen(
                         )
                     }
 
-                    // USO CORRETO DA KEY PARA EVITAR BUGS VISUAIS
                     items(
                         items = tarefasFiltradas,
                         key = { it.id }
@@ -181,8 +179,8 @@ fun TaskListScreen(
                             tarefa = tarefa,
                             isToDoList = (telaAlvo == "A fazer"),
                             navController = navController,
-                            onDeleteTask = onDeleteTask,
-                            onStatusChange = onStatusChange // Passa a nova função
+                            onDeleteTask = { taskViewModel.deleteTask(userId, it) },
+                            onStatusChange = { taskViewModel.changeTaskStatus(userId, it) }
                         )
                     }
                 }
@@ -198,34 +196,30 @@ fun TaskItem(
     isToDoList: Boolean,
     navController: NavController,
     onDeleteTask: (taskId: String) -> Unit,
-    onStatusChange: (task: Tarefa) -> Unit // Recebe função de status explícito
+    onStatusChange: (task: Tarefa) -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
             if (isToDoList) {
-                // --- LISTA "A FAZER" ---
                 when (it) {
                     SwipeToDismissBoxValue.EndToStart -> { // Apagar
                         onDeleteTask(tarefa.id)
                         true
                     }
                     SwipeToDismissBoxValue.StartToEnd -> { // Concluir
-                        // CORREÇÃO: Define explicitamente "Feito". Se rodar 2x, continua "Feito".
-                        onStatusChange(tarefa.copy(status = "Feito"))
+                        onStatusChange(tarefa)
                         true
                     }
                     else -> false
                 }
             } else {
-                // --- LISTA "FEITO" ---
                 when (it) {
                     SwipeToDismissBoxValue.StartToEnd -> { // ESQ -> DIR (Apagar)
                         onDeleteTask(tarefa.id)
                         true
                     }
                     SwipeToDismissBoxValue.EndToStart -> { // DIR -> ESQ (Retornar)
-                        // CORREÇÃO: Define explicitamente "A fazer".
-                        onStatusChange(tarefa.copy(status = "A fazer"))
+                        onStatusChange(tarefa)
                         true
                     }
                     else -> false
@@ -316,9 +310,9 @@ fun TaskItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(
-    onAddTask: (Tarefa) -> Unit,
     navController: NavController,
-    userId: String
+    userId: String,
+    taskViewModel: TaskViewModel = viewModel()
 ) {
     var titulo by remember { mutableStateOf("") }
     val status = "A fazer"
@@ -352,7 +346,8 @@ fun AddTaskScreen(
             Button(
                 onClick = {
                     if (titulo.isNotBlank()) {
-                        onAddTask(Tarefa(titulo = titulo, status = status, userId = userId))
+                        taskViewModel.addTask(userId, Tarefa(titulo = titulo, status = status, userId = userId))
+                        navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -368,12 +363,12 @@ fun AddTaskScreen(
 @Composable
 fun EditTaskScreen(
     navController: NavController,
-    onEditTask: (Tarefa) -> Unit,
     userId: String,
-    taskId: String?
+    taskId: String?,
+    taskViewModel: TaskViewModel = viewModel()
 ) {
-    val user = UserRepository.allUsers.find { it.id == userId }
-    val taskToEdit = user?.uTaskList?.find { it.id == taskId }
+    val tasks by taskViewModel.tasks.collectAsState()
+    val taskToEdit = tasks.find { it.id == taskId }
 
     var titulo by remember { mutableStateOf(taskToEdit?.titulo ?: "") }
 
@@ -407,7 +402,8 @@ fun EditTaskScreen(
                 onClick = {
                     if (titulo.isNotBlank() && taskToEdit != null) {
                         val updatedTask = taskToEdit.copy(titulo = titulo)
-                        onEditTask(updatedTask)
+                        taskViewModel.updateTask(userId, updatedTask)
+                        navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
