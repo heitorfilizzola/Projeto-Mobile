@@ -202,106 +202,92 @@ fun TaskItem(
         confirmValueChange = {
             if (isToDoList) {
                 when (it) {
-                    SwipeToDismissBoxValue.EndToStart -> { // Apagar
-                        onDeleteTask(tarefa.id)
-                        true
-                    }
-                    SwipeToDismissBoxValue.StartToEnd -> { // Concluir
-                        onStatusChange(tarefa)
-                        true
-                    }
+                    SwipeToDismissBoxValue.EndToStart -> { onDeleteTask(tarefa.id); true }
+                    SwipeToDismissBoxValue.StartToEnd -> { onStatusChange(tarefa); true }
                     else -> false
                 }
             } else {
                 when (it) {
-                    SwipeToDismissBoxValue.StartToEnd -> { // ESQ -> DIR (Apagar)
-                        onDeleteTask(tarefa.id)
-                        true
-                    }
-                    SwipeToDismissBoxValue.EndToStart -> { // DIR -> ESQ (Retornar)
-                        onStatusChange(tarefa)
-                        true
-                    }
+                    SwipeToDismissBoxValue.StartToEnd -> { onDeleteTask(tarefa.id); true }
+                    SwipeToDismissBoxValue.EndToStart -> { onStatusChange(tarefa); true }
                     else -> false
                 }
             }
         }
     )
 
+    // Estado para controlar se o card está expandido ou não
+    var expanded by remember { mutableStateOf(false) }
+
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
+            // ... (Lógica de cor de fundo mantida) ...
             val direction = dismissState.dismissDirection ?: return@SwipeToDismissBox
-
             val color by animateColorAsState(
                 if (isToDoList) {
-                    when (direction) {
-                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFF1B5E20) // Verde
-                        SwipeToDismissBoxValue.EndToStart -> Color(0xFFB71C1C) // Vermelho
-                        else -> Color.Transparent
-                    }
+                    if (direction == SwipeToDismissBoxValue.StartToEnd) Color(0xFF1B5E20) else Color(0xFFB71C1C)
                 } else {
-                    when (direction) {
-                        SwipeToDismissBoxValue.StartToEnd -> Color(0xFFB71C1C) // Vermelho (Apagar)
-                        SwipeToDismissBoxValue.EndToStart -> Color(0xFF1C6FB7) // Azul (Retornar)
-                        else -> Color.Transparent
-                    }
-                },
-                label = "color_animation"
+                    if (direction == SwipeToDismissBoxValue.StartToEnd) Color(0xFFB71C1C) else Color(0xFF1C6FB7)
+                }, label = "color"
             )
-
-            val icon = if (isToDoList) {
-                when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Done
-                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Delete
-                    else -> null
-                }
-            } else {
-                when (direction) {
-                    SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-                    SwipeToDismissBoxValue.EndToStart -> Icons.Default.Restore // Ícone de voltar
-                    else -> null
-                }
-            }
-
-            val alignment = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                else -> Alignment.Center
-            }
-
-            val scale by animateFloatAsState(
-                if (dismissState.targetValue == SwipeToDismissBoxValue.Settled) 0.75f else 1f,
-                label = "scale_animation"
-            )
+            val icon = if(isToDoList) if(direction == SwipeToDismissBoxValue.StartToEnd) Icons.Default.Done else Icons.Default.Delete else if(direction == SwipeToDismissBoxValue.StartToEnd) Icons.Default.Delete else Icons.Default.Restore
+            val alignment = if(direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd
 
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color, shape = MaterialTheme.shapes.large)
-                    .padding(horizontal = 20.dp),
+                modifier = Modifier.fillMaxSize().background(color, MaterialTheme.shapes.large).padding(horizontal = 20.dp),
                 contentAlignment = alignment
             ) {
-                icon?.let {
-                    Icon(it, contentDescription = null, tint = Color.White, modifier = Modifier.scale(scale))
-                }
+                icon?.let { Icon(it, null, tint = Color.White) }
             }
         }
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.large
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize(), // Animação suave ao expandir
+            shape = MaterialTheme.shapes.large,
+            onClick = { expanded = !expanded } // Clique alterna expansão
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+            Column(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(tarefa.titulo)
-                IconButton(onClick = {
-                    navController.navigate("edit_task/${tarefa.userId}/${tarefa.id}")
-                }) {
-                    Icon(Icons.Filled.Edit, "Editar", tint = Color.Gray)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = tarefa.titulo,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = {
+                        navController.navigate("edit_task/${tarefa.userId}/${tarefa.id}")
+                    }) {
+                        Icon(Icons.Filled.Edit, "Editar", tint = Color.Gray)
+                    }
+                }
+
+                // Se expandido, mostra a descrição
+                if (expanded) {
+                    if (tarefa.desc.isNotBlank()) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
+                        Text(
+                            text = tarefa.desc,
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = "Sem descrição",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
         }
@@ -316,6 +302,7 @@ fun AddTaskScreen(
 ) {
     var titulo by remember { mutableStateOf("") }
     val status = "A fazer"
+    var desc by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -343,10 +330,18 @@ fun AddTaskScreen(
                 label = { Text("Título da Tarefa") },
                 modifier = Modifier.fillMaxWidth()
             )
+            OutlinedTextField(
+                value = desc,
+                onValueChange = { desc = it },
+                label = { Text("Descrição (Opcional)") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+                maxLines = 5
+            )
             Button(
                 onClick = {
                     if (titulo.isNotBlank()) {
-                        taskViewModel.addTask(userId, Tarefa(titulo = titulo, status = status, userId = userId))
+                        taskViewModel.addTask(userId, Tarefa(titulo = titulo, status = status, desc = desc, userId = userId))
                         navController.popBackStack()
                     }
                 },
@@ -371,6 +366,8 @@ fun EditTaskScreen(
     val taskToEdit = tasks.find { it.id == taskId }
 
     var titulo by remember { mutableStateOf(taskToEdit?.titulo ?: "") }
+    var desc by remember { mutableStateOf(taskToEdit?.desc ?: "") }
+
 
     Scaffold(
         topBar = {
@@ -401,7 +398,7 @@ fun EditTaskScreen(
             Button(
                 onClick = {
                     if (titulo.isNotBlank() && taskToEdit != null) {
-                        val updatedTask = taskToEdit.copy(titulo = titulo)
+                        val updatedTask = taskToEdit.copy(titulo = titulo, desc = desc)
                         taskViewModel.updateTask(userId, updatedTask)
                         navController.popBackStack()
                     }

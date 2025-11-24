@@ -31,6 +31,7 @@ data class TarefaSupabase(
     val id: String,
     val titulo: String,
     val status: String,
+    val desc: String? = null,
     val userId: String // Chave estrangeira para associar a tarefa ao usuário
 )
 
@@ -70,6 +71,7 @@ object UserRepository {
                     TarefaSupabase(
                         id = task.id,
                         titulo = task.titulo,
+                        desc = task.desc,
                         status = task.status,
                         userId = userId
                     )
@@ -230,6 +232,7 @@ object UserRepository {
             val taskForSupabase = TarefaSupabase(
                 id = task.id,
                 titulo = task.titulo,
+                desc = task.desc,
                 status = task.status,
                 userId = userId
             )
@@ -260,6 +263,7 @@ object UserRepository {
         try {
             val updates = buildJsonObject {
                 put("titulo", kotlinx.serialization.json.JsonPrimitive(updatedTask.titulo))
+                put("desc", kotlinx.serialization.json.JsonPrimitive(updatedTask.desc))
                 put("status", kotlinx.serialization.json.JsonPrimitive(updatedTask.status))
             }
 

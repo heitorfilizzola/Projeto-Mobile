@@ -8,6 +8,7 @@ data class Tarefa(
     val id: String = UUID.randomUUID().toString(),
     val titulo: String,
     val status: String,
+    val desc: String = "",
     val userId: String
 )
 
