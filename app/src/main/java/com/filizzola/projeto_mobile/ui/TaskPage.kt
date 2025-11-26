@@ -303,6 +303,7 @@ fun AddTaskScreen(
     var titulo by remember { mutableStateOf("") }
     val status = "A fazer"
     var desc by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -328,7 +329,8 @@ fun AddTaskScreen(
                 value = titulo,
                 onValueChange = { titulo = it },
                 label = { Text("Título da Tarefa") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
             OutlinedTextField(
                 value = desc,
@@ -340,15 +342,27 @@ fun AddTaskScreen(
             )
             Button(
                 onClick = {
-                    if (titulo.isNotBlank()) {
-                        taskViewModel.addTask(userId, Tarefa(titulo = titulo, status = status, desc = desc, userId = userId))
+                    // Verifica se já não está salvando para evitar duplicação
+                    if (titulo.isNotBlank() && !isSaving) {
+                        isSaving = true // Bloqueia novos cliques
+
+                        taskViewModel.addTask(userId,
+                            Tarefa(titulo = titulo, desc = desc, status = status,  userId = userId))
                         navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = titulo.isNotBlank()
+                // Desabilita visualmente o botão enquanto salva
+                enabled = titulo.isNotBlank() && !isSaving
             ) {
-                Text("Salvar Tarefa")
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Salvar Tarefa")
+                }
             }
         }
     }
@@ -362,12 +376,25 @@ fun EditTaskScreen(
     taskId: String?,
     taskViewModel: TaskViewModel = viewModel()
 ) {
+    LaunchedEffect(userId) {
+        taskViewModel.loadTasks(userId)
+    }
+
     val tasks by taskViewModel.tasks.collectAsState()
+
     val taskToEdit = tasks.find { it.id == taskId }
 
-    var titulo by remember { mutableStateOf(taskToEdit?.titulo ?: "") }
-    var desc by remember { mutableStateOf(taskToEdit?.desc ?: "") }
+    var titulo by remember { mutableStateOf("") }
+    var desc by remember { mutableStateOf("") }
 
+    var isSaving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(taskToEdit) {
+        if (taskToEdit != null) {
+            titulo = taskToEdit.titulo
+            desc = taskToEdit.desc
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -389,24 +416,50 @@ fun EditTaskScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                value = titulo,
-                onValueChange = { titulo = it },
-                label = { Text("Título da Tarefa") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = {
-                    if (titulo.isNotBlank() && taskToEdit != null) {
-                        val updatedTask = taskToEdit.copy(titulo = titulo, desc = desc)
-                        taskViewModel.updateTask(userId, updatedTask)
-                        navController.popBackStack()
+            if (taskToEdit == null) {
+                CircularProgressIndicator()
+                Text("Carregando tarefa...", color = Color.Gray)
+            } else {
+                OutlinedTextField(
+                    value = titulo,
+                    onValueChange = { titulo = it },
+                    label = { Text("Título da Tarefa") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                OutlinedTextField(
+                    value = desc,
+                    onValueChange = { desc = it },
+                    label = { Text("Descrição") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5
+                )
+
+                Button(
+                    onClick = {
+                        if (titulo.isNotBlank() && !isSaving) {
+                            isSaving = true
+                            val updatedTask = taskToEdit.copy(
+                                titulo = titulo,
+                                desc = desc
+                            )
+                            taskViewModel.updateTask(userId, updatedTask)
+                            navController.popBackStack()
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = titulo.isNotBlank() && !isSaving
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Salvar Alterações")
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = titulo.isNotBlank()
-            ) {
-                Text("Salvar Alterações")
+                }
             }
         }
     }
