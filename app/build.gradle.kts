@@ -80,4 +80,11 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation(kotlin("test"))
+
+    testImplementation("org.slf4j:slf4j-simple:2.0.9")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.8") // Corrige erros de 'mockk', 'every', 'verify'
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // Corrige 'runTest', 'MainDispatcherRule'
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
 }
