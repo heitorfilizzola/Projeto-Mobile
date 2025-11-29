@@ -424,7 +424,9 @@ fun EditTaskScreen(
                     value = titulo,
                     onValueChange = { titulo = it },
                     label = { Text("Título da Tarefa") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+
                 )
 
                 OutlinedTextField(

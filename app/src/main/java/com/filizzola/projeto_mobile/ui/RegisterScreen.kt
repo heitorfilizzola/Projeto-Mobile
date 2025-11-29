@@ -56,6 +56,7 @@ import com.filizzola.projeto_mobile.viewmodel.RegisterViewModel
 import com.filizzola.projeto_mobile.viewmodel.RegistrationState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.testTag
 
 @Composable
 fun RegisterScreen(
@@ -220,6 +221,134 @@ fun RegisterScreen(
                         onClick = { registerViewModel.register() },
                         modifier = modifier.padding(16.dp),
                         enabled = registrationState != RegistrationState.Loading
+                    ) {
+                        Text(text = "Register", fontSize = 24.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// Fun stateless para teste
+@Composable
+fun RegisterScreenContent(
+    username: String,
+    email: String,
+    password: String,
+    confirmPassword: String,
+    onUsernameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onRegisterClick: () -> Unit,
+    onBackClick: () -> Unit,
+    isLoading: Boolean
+) {
+    val borderGray = Color(0xFFCACACA)
+    val appIcons = Icons.Outlined
+    val bgColor = MaterialTheme.colorScheme.background
+
+    bgImage(modifier = Modifier.fillMaxSize())
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .fillMaxWidth()
+            .imePadding(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            color = bgColor,
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .shadow(8.dp)
+                .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
+            shape = RoundedCornerShape(65.dp),
+        ) {
+            Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = 24.dp, top = 24.dp)
+                        .testTag("back_button") // <--- TAG
+                ) {
+                    Icon(imageVector = appIcons.ArrowBackIosNew, contentDescription = "Voltar")
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 40.dp, vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Register",
+                        modifier = Modifier
+                            .padding(bottom = 32.dp, top = 32.dp)
+                            .testTag("register_title"),
+                        fontSize = 30.sp
+                    )
+
+                    RegisterField(
+                        label = "Username",
+                        leadingIcon = { Icon(appIcons.AccountCircle, "User icon") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+                        value = username,
+                        onValueChanged = onUsernameChange,
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
+                            .testTag("username_field") // <--- TAG
+                    )
+
+                    RegisterField(
+                        label = "E-Mail",
+                        leadingIcon = { Icon(appIcons.Email, "Email icon") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        value = email,
+                        onValueChanged = onEmailChange,
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
+                            .testTag("email_field") // <--- TAG
+                    )
+
+                    // Campo Senha
+                    RegisterField(
+                        label = "Password",
+                        leadingIcon = { Icon(appIcons.Lock, "Padlock icon") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
+                        value = password,
+                        onValueChanged = onPasswordChange,
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
+                            .testTag("password_field") // <--- TAG
+                    )
+
+                    // Campo Confirmar Senha
+                    RegisterField(
+                        label = "Confirm Password",
+                        leadingIcon = { Icon(appIcons.Lock, "Padlock icon") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Send),
+                        value = confirmPassword,
+                        onValueChanged = onConfirmPasswordChange,
+                        modifier = Modifier
+                            .padding(bottom = 16.dp)
+                            .fillMaxWidth()
+                            .testTag("confirm_password_field") // <--- TAG
+                    )
+
+                    Button(
+                        onClick = onRegisterClick,
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .testTag("register_button"), // <--- TAG
+                        enabled = !isLoading
                     ) {
                         Text(text = "Register", fontSize = 24.sp)
                     }

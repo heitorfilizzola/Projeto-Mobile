@@ -63,6 +63,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.testTag
 
 /**
  * Composable para exibir a imagem de fundo da tela.
@@ -108,6 +109,16 @@ fun GreetingLogin(
             else -> {}
         }
     }
+
+    GreetingLoginContent(
+        email = emailInput,
+        password = passInput,
+        onEmailChange = { loginViewModel.onEmailChange(it) },
+        onPasswordChange = { loginViewModel.onPasswordChange(it) },
+        onLoginClick = { loginViewModel.login() },
+        onRegisterClick = onNavigateToRegister,
+        isLoading = loginState == LoginState.Loading
+    )
 
     bgImage()
 
@@ -205,6 +216,105 @@ fun GreetingLogin(
     }
 
 
+
+@Composable
+fun GreetingLoginContent(
+    email: String,
+    password: String,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onLoginClick: () -> Unit,
+    onRegisterClick: () -> Unit,
+    isLoading: Boolean
+) {
+    val borderGray = Color(0xFFCACACA)
+    val appIcons = Icons.Outlined
+    val bgColor = MaterialTheme.colorScheme.background
+
+    bgImage() // Sua imagem de fundo
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .imePadding(),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            color = bgColor,
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .shadow(8.dp)
+                .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
+            shape = RoundedCornerShape(65.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 40.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "NoteSync",
+                    modifier = Modifier.padding(vertical = 32.dp),
+                    fontSize = 30.sp
+                )
+
+                // CAMPO EMAIL COM TAG
+                LoginField(
+                    label = "E-Mail",
+                    leadingIcon = { Icon(appIcons.Email, "Email icon") },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    value = email,
+                    onValueChanged = onEmailChange,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
+                        .testTag("email_field") // <--- TAG
+                )
+
+                // CAMPO SENHA COM TAG
+                LoginField(
+                    label = "Password",
+                    leadingIcon = { Icon(appIcons.Lock, "Padlock icon") },
+                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Send),
+                    value = password,
+                    onValueChanged = onPasswordChange,
+                    isPassword = true,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .fillMaxWidth()
+                        .testTag("password_field")
+                )
+
+                Button(
+                    onClick = onLoginClick,
+                    modifier = Modifier
+                        .padding(top = 16.dp)
+                        .testTag("login_button"),
+                    enabled = !isLoading
+                ) {
+                    Text(text = "Login", fontSize = 24.sp)
+                }
+
+                Text("Não tem uma conta? ", modifier = Modifier.padding(top = 24.dp))
+
+                Text(
+                    modifier = Modifier
+                        .clickable { onRegisterClick() }
+                        .padding(bottom = 32.dp)
+                        .testTag("register_text"),
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                            append("Registre-se")
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun LoginField(
