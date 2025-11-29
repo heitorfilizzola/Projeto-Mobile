@@ -1,7 +1,5 @@
 package com.filizzola.projeto_mobile.ui
 
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,19 +22,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.filizzola.projeto_mobile.data.Tarefa
-import com.filizzola.projeto_mobile.data.User
-import com.filizzola.projeto_mobile.data.UserRepository
-import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.filizzola.projeto_mobile.viewmodel.TaskViewModel
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListScreen(
     navController: NavController,
@@ -44,16 +34,43 @@ fun TaskListScreen(
     onLogout: () -> Unit,
     taskViewModel: TaskViewModel = viewModel()
 ) {
-    var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val tarefas by taskViewModel.tasks.collectAsState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
         taskViewModel.loadTasks(userId)
     }
 
-    val tarefas by taskViewModel.tasks.collectAsState()
+    TaskListContent(
+        tasks = tarefas,
+        onLogoutClick = {
+            scope.launch {
+                taskViewModel.logout()
+                onLogout()
+                navController.navigate("login") {
+                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                }
+            }
+        },
+        onAddTaskClick = { navController.navigate("add_task/$userId") },
+        onEditTaskClick = { task -> navController.navigate("edit_task/${task.userId}/${task.id}") },
+        onDeleteTask = { taskId -> taskViewModel.deleteTask(userId, taskId) },
+        onStatusChange = { task -> taskViewModel.changeTaskStatus(userId, task) }
+    )
+}
 
-    val scope = rememberCoroutineScope()
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@Composable
+fun TaskListContent(
+    tasks: List<Tarefa>,
+    onLogoutClick: () -> Unit,
+    onAddTaskClick: () -> Unit,
+    onEditTaskClick: (Tarefa) -> Unit,
+    onDeleteTask: (String) -> Unit,
+    onStatusChange: (Tarefa) -> Unit
+) {
+    var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -69,17 +86,7 @@ fun TaskListScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ){
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    taskViewModel.logout()
-                                    onLogout()
-                                    navController.navigate("login") {
-                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                    }
-                                }
-                            }
-                        ) {
+                        IconButton(onClick = onLogoutClick) {
                             Icon(Icons.Default.Logout, contentDescription = "LogOut")
                         }
                         Text("NoteSync", textAlign = TextAlign.Center)
@@ -111,7 +118,7 @@ fun TaskListScreen(
                         }
 
                         Button(
-                            onClick = { navController.navigate("add_task/$userId") },
+                            onClick = onAddTaskClick,
                             modifier = Modifier.fillMaxHeight(0.90f)
                         ){
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -150,7 +157,7 @@ fun TaskListScreen(
                     }
                 }
             ) { telaAlvo ->
-                val tarefasFiltradas = tarefas.filter { it.status == telaAlvo }
+                val tarefasFiltradas = tasks.filter { it.status == telaAlvo }
 
                 LazyColumn(
                     modifier = Modifier
@@ -178,9 +185,9 @@ fun TaskListScreen(
                         TaskItem(
                             tarefa = tarefa,
                             isToDoList = (telaAlvo == "A fazer"),
-                            navController = navController,
-                            onDeleteTask = { taskViewModel.deleteTask(userId, it) },
-                            onStatusChange = { taskViewModel.changeTaskStatus(userId, it) }
+                            onEditClick = { onEditTaskClick(tarefa) },
+                            onDeleteTask = onDeleteTask,
+                            onStatusChange = onStatusChange
                         )
                     }
                 }
@@ -194,7 +201,7 @@ fun TaskListScreen(
 fun TaskItem(
     tarefa: Tarefa,
     isToDoList: Boolean,
-    navController: NavController,
+    onEditClick: () -> Unit, // Removido NavController, agora recebe uma função
     onDeleteTask: (taskId: String) -> Unit,
     onStatusChange: (task: Tarefa) -> Unit
 ) {
@@ -216,13 +223,11 @@ fun TaskItem(
         }
     )
 
-    // Estado para controlar se o card está expandido ou não
     var expanded by remember { mutableStateOf(false) }
 
     SwipeToDismissBox(
         state = dismissState,
         backgroundContent = {
-            // ... (Lógica de cor de fundo mantida) ...
             val direction = dismissState.dismissDirection ?: return@SwipeToDismissBox
             val color by animateColorAsState(
                 if (isToDoList) {
@@ -245,9 +250,9 @@ fun TaskItem(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .animateContentSize(), // Animação suave ao expandir
+                .animateContentSize(),
             shape = MaterialTheme.shapes.large,
-            onClick = { expanded = !expanded } // Clique alterna expansão
+            onClick = { expanded = !expanded }
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth()
@@ -263,14 +268,11 @@ fun TaskItem(
                         text = tarefa.titulo,
                         style = MaterialTheme.typography.titleMedium
                     )
-                    IconButton(onClick = {
-                        navController.navigate("edit_task/${tarefa.userId}/${tarefa.id}")
-                    }) {
+                    IconButton(onClick = onEditClick) {
                         Icon(Icons.Filled.Edit, "Editar", tint = Color.Gray)
                     }
                 }
 
-                // Se expandido, mostra a descrição
                 if (expanded) {
                     if (tarefa.desc.isNotBlank()) {
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 12.dp))
@@ -293,15 +295,31 @@ fun TaskItem(
         }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTaskScreen(
     navController: NavController,
     userId: String,
     taskViewModel: TaskViewModel = viewModel()
 ) {
+    AddTaskContent(
+        onBackClick = { navController.popBackStack() },
+        onSaveTask = { titulo, desc ->
+            taskViewModel.addTask(
+                userId,
+                Tarefa(titulo = titulo, desc = desc, status = "A fazer", userId = userId)
+            )
+            navController.popBackStack()
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddTaskContent(
+    onBackClick: () -> Unit,
+    onSaveTask: (String, String) -> Unit
+) {
     var titulo by remember { mutableStateOf("") }
-    val status = "A fazer"
     var desc by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
 
@@ -310,7 +328,7 @@ fun AddTaskScreen(
             TopAppBar(
                 title = { Text("Adicionar Nova Tarefa") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Voltar")
                     }
                 }
@@ -342,17 +360,12 @@ fun AddTaskScreen(
             )
             Button(
                 onClick = {
-                    // Verifica se já não está salvando para evitar duplicação
                     if (titulo.isNotBlank() && !isSaving) {
-                        isSaving = true // Bloqueia novos cliques
-
-                        taskViewModel.addTask(userId,
-                            Tarefa(titulo = titulo, desc = desc, status = status,  userId = userId))
-                        navController.popBackStack()
+                        isSaving = true
+                        onSaveTask(titulo, desc)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                // Desabilita visualmente o botão enquanto salva
                 enabled = titulo.isNotBlank() && !isSaving
             ) {
                 if (isSaving) {
@@ -367,8 +380,6 @@ fun AddTaskScreen(
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTaskScreen(
     navController: NavController,
@@ -381,12 +392,30 @@ fun EditTaskScreen(
     }
 
     val tasks by taskViewModel.tasks.collectAsState()
-
     val taskToEdit = tasks.find { it.id == taskId }
 
+    EditTaskContent(
+        taskToEdit = taskToEdit,
+        onBackClick = { navController.popBackStack() },
+        onSaveClick = { titulo, desc ->
+            if (taskToEdit != null) {
+                val updatedTask = taskToEdit.copy(titulo = titulo, desc = desc)
+                taskViewModel.updateTask(userId, updatedTask)
+                navController.popBackStack()
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditTaskContent(
+    taskToEdit: Tarefa?,
+    onBackClick: () -> Unit,
+    onSaveClick: (String, String) -> Unit
+) {
     var titulo by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
-
     var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(taskToEdit) {
@@ -401,7 +430,7 @@ fun EditTaskScreen(
             TopAppBar(
                 title = { Text("Editar Tarefa") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBackClick) {
                         Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Voltar")
                     }
                 }
@@ -426,7 +455,6 @@ fun EditTaskScreen(
                     label = { Text("Título da Tarefa") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
-
                 )
 
                 OutlinedTextField(
@@ -442,12 +470,7 @@ fun EditTaskScreen(
                     onClick = {
                         if (titulo.isNotBlank() && !isSaving) {
                             isSaving = true
-                            val updatedTask = taskToEdit.copy(
-                                titulo = titulo,
-                                desc = desc
-                            )
-                            taskViewModel.updateTask(userId, updatedTask)
-                            navController.popBackStack()
+                            onSaveClick(titulo, desc)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -464,5 +487,13 @@ fun EditTaskScreen(
                 }
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun AddTaskPreview() {
+    MaterialTheme {
+        AddTaskContent(onBackClick = {}, onSaveTask = { _, _ -> })
     }
 }
