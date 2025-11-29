@@ -1,62 +1,65 @@
 # NoteSync
 
-`NoteSync` é um aplicativo de gerenciamento de tarefas (to-do list) desenvolvido para Android. Ele permite que os usuários se registrem, façam login e gerenciem suas tarefas pessoais, sincronizando os dados com um backend Supabase.
+`NoteSync` is a to-do list application for Android that allows users to manage their tasks. It is designed with an offline-first architecture, ensuring that users can continue to use the app even without an internet connection. Changes are automatically synchronized with a Supabase backend when the connection is restored.
 
-O projeto é construído inteiramente com tecnologias modernas de desenvolvimento Android, utilizando Kotlin e Jetpack Compose para a interface do usuário.
+## Features
 
-## Funcionalidades
+*   **User Authentication:** Users can register and log in to their accounts.
+*   **Task Management:**
+    *   Create, read, update, and delete tasks.
+    *   Mark tasks as complete.
+*   **Offline-First:** The app is fully functional offline.
+    *   Tasks are stored locally on the device.
+    *   Changes made offline are automatically synced with the server when the connection is re-established.
+*   **Data Synchronization:** Two-way data synchronization between the local database and the Supabase backend.
 
-Com base na estrutura de navegação definida em `MainActivity.kt`, o aplicativo possui as seguintes telas e funcionalidades:
+## Architecture
 
-* **Autenticação de Usuário:**
-    * Tela de Login (`/login`).
-    * Tela de Registro (`/register`).
-* **Gerenciamento de Tarefas:**
-    * **Listar Tarefas (`/tasks/{userId}`):** Exibe a lista de tarefas de um usuário específico.
-    * **Adicionar Tarefa (`/add_task/{userId}`):** Permite a criação de novas tarefas.
-    * **Editar Tarefa (`/edit_task/{userId}/{taskId}`):** Permite a modificação de uma tarefa existente.
-    * **Excluir Tarefas:** Funcionalidade implementada na tela de lista de tarefas.
-    * **Marcar como Concluída:** Permite alternar o status de uma tarefa (concluída/pendente).
+The application follows a modern Android architecture with an offline-first approach.
 
-## Tecnologias Utilizadas
+*   **UI Layer (Compose):** The user interface is built entirely with Jetpack Compose. The UI observes data from the `UserRepository` and sends user events to it.
+*   **Data Layer (`UserRepository`):** A singleton object that acts as the single source of truth for the application's data. It is responsible for:
+    *   Managing an in-memory cache of user and task data.
+    *   Handling all business logic related to user authentication and task management.
+    *   Communicating with the Supabase backend for data synchronization.
+*   **Persistence Layer (`SyncManager`):** This layer is responsible for persisting data locally. It uses Jetpack DataStore to store tasks for each user, allowing for offline access.
+*   **Backend:** Supabase is used for user authentication and as the cloud database for storing task data.
 
-Este projeto utiliza um stack moderno focado em Kotlin e desenvolvimento declarativo de UI:
+## Technologies Used
 
-* **Linguagem:** [Kotlin](https://kotlinlang.org/)
-* **UI:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (utilizando Material 3)
-* **Navegação:** [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
-* **Backend como Serviço (BaaS):** [Supabase](https://supabase.io/)
-    * Autenticação (`auth-kt`)
-    * Banco de Dados (`postgrest-kt`)
-    * Tempo Real (`realtime-kt`)
-* **Programação Assíncrona:** Kotlin Coroutines (visto em `MainActivity.kt` com `coroutineScope.launch`)
-* **Networking:** [Ktor Client](https://ktor.io/docs/client-overview.html)
-* **Serialização:** [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization)
+*   **Language:** [Kotlin](https://kotlinlang.org/)
+*   **UI:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (with Material 3)
+*   **Navigation:** [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
+*   **Local Storage:** [Jetpack DataStore](https://developer.android.com/topic/libraries/architecture/datastore) (with Gson for serialization)
+*   **Backend as a Service (BaaS):** [Supabase](https://supabase.io/)
+    *   Authentication (`auth-kt`)
+    *   Database (`postgrest-kt`)
+*   **Asynchronous Programming:** Kotlin Coroutines
+*   **Networking:** [Ktor Client](https://ktor.io/docs/client-overview.html)
+*   **Serialization:** [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization) and [Gson](https://github.com/google/gson)
 
-## Configuração do Projeto
+## Setup and Configuration
 
-* **Nome do App:** `NoteSync`
-* **ID da Aplicação:** `com.filizzola.projeto_mobile`
-* **SDK Mínimo (minSdk):** 24
-* **SDK Alvo (targetSdk):** 36
-* **SDK de Compilação (compileSdk):** 36
-* **Versão do Java:** 11
-
-## Como Executar
-
-1.  Clone este repositório.
-2.  Abra o projeto no Android Studio.
-3.  **Configurar o Supabase:** O projeto requer credenciais do Supabase para funcionar. Atualize o arquivo `app/src/main/java/com/filizzola/projeto_mobile/MainActivity.kt` com sua URL e Chave Anônima (public-anon-key) do Supabase:
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/NoteSync.git
+    ```
+2.  **Open in Android Studio:** Open the cloned project in Android Studio.
+3.  **Configure Supabase:**
+    You need to add your Supabase URL and public-anon-key to the project. Open the file `app/src/main/java/com/filizzola/projeto_mobile/MainActivity.kt` and update the `SupabaseConfig` object with your credentials:
 
     ```kotlin
-    val supabase = createSupabaseClient(
-        supabaseUrl = "SUA_URL_SUPABASE",
-        supabaseKey = "SUA_CHAVE_ANON_SUPABASE"
-    ) {
-        install(Auth)
-        install(Postgrest)
+    object SupabaseConfig {
+        val client by lazy {
+            createSupabaseClient(
+                supabaseUrl = "YOUR_SUPABASE_URL",
+                supabaseKey = "YOUR_SUPABASE_ANON_KEY"
+            ) {
+                install(Auth)
+                install(Postgrest)
+            }
+        }
     }
     ```
-
-4.  Sincronize as dependências do Gradle.
-5.  Execute o aplicativo em um emulador Android ou dispositivo físico.
+4.  **Sync Gradle:** Sync the project with the Gradle files.
+5.  **Run the app:** Run the application on an Android emulator or a physical device.
