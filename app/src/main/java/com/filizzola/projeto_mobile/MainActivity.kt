@@ -42,6 +42,14 @@ import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import java.util.concurrent.TimeUnit
+import com.filizzola.projeto_mobile.worker.SyncWorker
+
 
 object SupabaseConfig {
     val client by lazy {
@@ -56,6 +64,7 @@ object SupabaseConfig {
 }
 
 val supabase get() = SupabaseConfig.client
+
 
 class MainActivity : ComponentActivity() {
 
@@ -72,6 +81,7 @@ class MainActivity : ComponentActivity() {
         syncManager = SyncManager(this)
 
         checkNetworkConnection()
+        schedulePeriodicSync()
 
         setContent {
             ProjetoMobileTheme {
@@ -84,6 +94,24 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             networkManager.checkConnection { }
         }
+    }
+
+    private fun schedulePeriodicSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+            15, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "NoteSyncPeriodicWork",
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncWorkRequest
+        )
     }
 }
 

@@ -9,7 +9,11 @@ data class Tarefa(
     val titulo: String,
     val status: String,
     val desc: String = "",
-    val userId: String
+    val userId: String,
+    val dueDate: Long? = null,
+    val lastModified: Long = System.currentTimeMillis(),
+    val isSynced: Boolean = false,
+    val isDeleted: Boolean = false
 )
 
 object TaskRepository {

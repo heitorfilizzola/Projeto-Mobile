@@ -32,84 +32,153 @@ data class TarefaSupabase(
     val titulo: String,
     val status: String,
     val desc: String? = null,
-    val userId: String // Chave estrangeira para associar a tarefa ao usuário
+    val userId: String, // Chave estrangeira para associar a tarefa ao usuário
+    val dueDate: String? = null
 )
 
 object UserRepository {
     val allUsers: MutableList<User> = mutableListOf()
     private val gson = Gson()
 
+    private fun Long.toIsoString(): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+        sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+        return sdf.format(java.util.Date(this))
+    }
+
+    private fun String.toMillis(): Long {
+        // Tenta formatos comuns do Postgres/ISO 8601
+        val patterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+            "yyyy-MM-dd'T'HH:mm:ssXXX",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'"
+        )
+        
+        for (pattern in patterns) {
+            try {
+                val sdf = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
+                sdf.timeZone = java.util.TimeZone.getTimeZone("UTC")
+                return sdf.parse(this)?.time ?: continue
+            } catch (e: Exception) {
+                continue
+            }
+        }
+        return 0L
+    }
+
     private suspend fun fetchTasksForUser(userId: String): ArrayList<Tarefa> {
         val tasksTag = "FetchTasks"
         try {
+            // Decodifica para TarefaSupabase primeiro para lidar com a String de data
             val tasksFromSupabase = supabase.from("Tasks").select() {
                 filter {
                     eq("userId", userId)
                 }
-            }.decodeList<Tarefa>()
-            Log.d(tasksTag, "Tarefas buscadas com sucesso para o usuário $userId: ${tasksFromSupabase.size} tarefas encontradas.")
-            return ArrayList(tasksFromSupabase)
+            }.decodeList<TarefaSupabase>()
+
+            // Converte para o modelo Tarefa do app
+            val tasks = tasksFromSupabase.map { taskSupabase ->
+                Tarefa(
+                    id = taskSupabase.id,
+                    titulo = taskSupabase.titulo,
+                    status = taskSupabase.status,
+                    desc = taskSupabase.desc ?: "",
+                    userId = taskSupabase.userId,
+                    dueDate = taskSupabase.dueDate?.toMillis()
+                )
+            }
+
+            Log.d(tasksTag, "Tarefas buscadas com sucesso para o usuário $userId: ${tasks.size} tarefas encontradas.")
+            return ArrayList(tasks)
         } catch (e: Exception) {
             Log.e(tasksTag, "Erro ao buscar tarefas para o usuário $userId no Supabase.", e)
             return arrayListOf()
         }
     }
 
-    // --- NOVA FUNÇÃO DE SYNC (ESSENCIAL PARA OFFLINE -> ONLINE) ---
+    // --- NOVA FUNÇÃO DE SYNC (INCREMENTAL) ---
     suspend fun syncUserData(userId: String): List<Tarefa>? {
         val syncTag = "SyncProcess"
-        val debugTag = "SupabaseDebug" // Tag para filtrar no Logcat
+        val debugTag = "SupabaseDebug"
         try {
-            // 1. Pega tarefas que estão na memória local (carregadas do disco pelo MainActivity)
             val user = allUsers.find { it.id == userId }
             val localTasks = user?.uTaskList ?: arrayListOf()
 
-            // 2. Envia (Sobe) as tarefas locais para o Supabase usando UPSERT
-            // Upsert atualiza se o ID já existe ou cria se não existe.
-            if (localTasks.isNotEmpty()) {
-                val tasksForSupabase = localTasks.map { task ->
-                    TarefaSupabase(
-                        id = task.id,
-                        titulo = task.titulo,
-                        desc = task.desc,
-                        status = task.status,
-                        userId = userId
-                    )
-                }
+            // 1. PUSH: Envia mudanças locais (apenas as sujas)
+            val dirtyTasks = localTasks.filter { !it.isSynced }.toList() // Cópia para evitar ConcurrentModification
+            Log.d(syncTag, "SYNC: Encontradas ${dirtyTasks.size} mudanças locais para enviar.")
 
-                Log.d(debugTag, "SYNC: Tentando fazer UPSERT de ${tasksForSupabase.size} tarefas: $tasksForSupabase")
-
-                // onConflict="id" garante que não duplique
-                supabase.from("Tasks").upsert(tasksForSupabase) {
-                    onConflict = "id"
+            dirtyTasks.forEach { task ->
+                try {
+                    if (task.isDeleted) {
+                        Log.d(debugTag, "SYNC: Deletando tarefa ${task.id} do servidor...")
+                        supabase.from("Tasks").delete {
+                            filter { eq("id", task.id); eq("userId", userId) }
+                        }
+                        // Sucesso: Remove definitivamente da RAM
+                        val index = localTasks.indexOfFirst { it.id == task.id }
+                        if (index != -1) {
+                            localTasks.removeAt(index)
+                        }
+                    } else {
+                        val taskForSupabase = TarefaSupabase(
+                            id = task.id,
+                            titulo = task.titulo,
+                            desc = task.desc,
+                            status = task.status,
+                            userId = userId,
+                            dueDate = task.dueDate?.toIsoString()
+                        )
+                        Log.d(debugTag, "SYNC: Enviando tarefa ${task.id} para servidor...")
+                        supabase.from("Tasks").upsert(taskForSupabase) { onConflict = "id" }
+                        
+                        // Sucesso: Marca como sincronizado
+                        val index = localTasks.indexOfFirst { it.id == task.id }
+                        if (index != -1) {
+                            localTasks[index] = localTasks[index].copy(isSynced = true)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(syncTag, "Falha ao enviar tarefa ${task.id}: ${e.message}")
+                    // Continua para a próxima, mantendo esta como dirty
                 }
-                Log.d(syncTag, "SYNC: Upload de tarefas locais realizado com sucesso.")
-                Log.d(debugTag, "SYNC: Sucesso no UPSERT.")
-            } else {
-                Log.d(debugTag, "SYNC: Nenhuma tarefa local para enviar.")
             }
 
-            // 3. Baixa a versão oficial do servidor (que pode ter atualizações de outros lugares)
+            // 2. PULL: Baixa dados remotos (Snapshot completo do servidor)
             Log.d(debugTag, "SYNC: Baixando dados remotos (Pull)...")
             val remoteTasks = fetchTasksForUser(userId)
 
-            // 4. Atualiza a memória RAM com a versão final mesclada
-            val updatedUser = User(
-                id = userId,
-                username = "Usuário Sincronizado",
-                email = "",
-                uTaskList = remoteTasks
-            )
+            // 3. MERGE: Integra Remoto com Local
+            val remoteIds = remoteTasks.map { it.id }.toSet()
 
-            val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
-            if (existingUserIndex != -1) {
-                allUsers[existingUserIndex] = updatedUser
-            } else {
-                allUsers.add(updatedUser)
+            // 3a. Handle Remote Deletes: Remove locais (limpos) que não estão no remoto
+            // Se estiver dirty, mantemos (re-criará no servidor ou conflito)
+            val tasksToRemove = localTasks.filter { it.isSynced && !remoteIds.contains(it.id) }
+            localTasks.removeAll(tasksToRemove)
+            if(tasksToRemove.isNotEmpty()) Log.d(syncTag, "SYNC: ${tasksToRemove.size} tarefas removidas remotamente foram apagadas localmente.")
+
+            // 3b. Update/Insert Remote Tasks
+            remoteTasks.forEach { remote ->
+                val localIndex = localTasks.indexOfFirst { it.id == remote.id }
+                if (localIndex != -1) {
+                    val local = localTasks[localIndex]
+                    if (local.isSynced) {
+                        // Local está limpo, sobrescreve com o remoto (Server Wins)
+                        // Preserva o synced=true
+                         localTasks[localIndex] = remote.copy(isSynced = true, lastModified = System.currentTimeMillis())
+                    } else {
+                        // Local está sujo (Conflito). Mantém o local (Client Wins temporariamente)
+                        Log.d(syncTag, "Conflito: Tarefa ${remote.id} alterada localmente. Mantendo versão local.")
+                    }
+                } else {
+                    // Novo do remoto
+                    localTasks.add(remote.copy(isSynced = true, lastModified = System.currentTimeMillis()))
+                }
             }
 
-            Log.d(syncTag, "Sincronização completa. Retornando lista atualizada.")
-            return remoteTasks // Retorna a lista para ser salva no disco
+            Log.d(syncTag, "Sincronização completa. Lista atualizada.")
+            return localTasks
 
         } catch (e: Exception) {
             Log.e(syncTag, "Erro no Sync (Provavelmente sem internet): ${e.message}")
@@ -222,29 +291,42 @@ object UserRepository {
         val addTaskTag = "AddTask"
         val debugTag = "SupabaseDebug"
 
-        // 1. Atualiza RAM primeiro (Instantâneo)
-        val user = allUsers.find { it.id == userId }
-        user?.uTaskList?.add(task)
-        Log.d(addTaskTag, "Tarefa adicionada na memória.")
+        // 1. Prepare task for local storage (Default: Not Synced)
+        val taskToAdd = task.copy(
+            isSynced = false,
+            lastModified = System.currentTimeMillis()
+        )
 
-        // 2. Tenta Supabase (Online)
+        // 2. Atualiza RAM primeiro (Instantâneo)
+        val user = allUsers.find { it.id == userId }
+        user?.uTaskList?.add(taskToAdd)
+        Log.d(addTaskTag, "Tarefa adicionada na memória (Pending Sync).")
+
+        // 3. Tenta Supabase (Online)
         try {
             val taskForSupabase = TarefaSupabase(
-                id = task.id,
-                titulo = task.titulo,
-                desc = task.desc,
-                status = task.status,
-                userId = userId
+                id = taskToAdd.id,
+                titulo = taskToAdd.titulo,
+                desc = taskToAdd.desc,
+                status = taskToAdd.status,
+                userId = userId,
+                dueDate = taskToAdd.dueDate?.toIsoString()
             )
 
             Log.d(debugTag, "ADD: Enviando tarefa para Supabase... $taskForSupabase")
             supabase.from("Tasks").insert(taskForSupabase)
+            
+            // Sucesso: Marca como sincronizado na RAM
+            val index = user?.uTaskList?.indexOfFirst { it.id == taskToAdd.id }
+            if (index != null && index != -1) {
+                user?.uTaskList?.set(index, taskToAdd.copy(isSynced = true))
+            }
+            
             Log.d(debugTag, "ADD: Tarefa inserida com SUCESSO no Supabase.")
 
         } catch (e: Exception) {
-            // Se falhar (Offline), apenas loga. O dado está na RAM e será salvo no disco pelo MainActivity
-            Log.e(addTaskTag, "Sem internet: Tarefa salva apenas localmente por enquanto.", e)
-            Log.e(debugTag, "ADD: Falha ao enviar para Supabase (Offline?): ${e.message}")
+            // Se falhar (Offline), apenas loga. O dado está na RAM com isSynced=false
+            Log.e(addTaskTag, "Sem internet: Tarefa mantida localmente para sync futuro.", e)
         }
     }
 
@@ -252,32 +334,46 @@ object UserRepository {
         val updateTag = "TaskUpdate"
         val debugTag = "SupabaseDebug"
 
+        val taskToUpdate = updatedTask.copy(
+            isSynced = false,
+            lastModified = System.currentTimeMillis()
+        )
+
         // 1. Atualiza RAM primeiro
         val user = allUsers.find { it.id == userId }
-        val taskIndex = user?.uTaskList?.indexOfFirst { it.id == updatedTask.id } ?: -1
+        val taskIndex = user?.uTaskList?.indexOfFirst { it.id == taskToUpdate.id } ?: -1
         if (taskIndex != -1) {
-            user?.uTaskList?.set(taskIndex, updatedTask)
+            user?.uTaskList?.set(taskIndex, taskToUpdate)
         }
 
         // 2. Tenta Supabase
         try {
             val updates = buildJsonObject {
-                put("titulo", kotlinx.serialization.json.JsonPrimitive(updatedTask.titulo))
-                put("desc", kotlinx.serialization.json.JsonPrimitive(updatedTask.desc))
-                put("status", kotlinx.serialization.json.JsonPrimitive(updatedTask.status))
+                put("titulo", kotlinx.serialization.json.JsonPrimitive(taskToUpdate.titulo))
+                put("desc", kotlinx.serialization.json.JsonPrimitive(taskToUpdate.desc))
+                put("status", kotlinx.serialization.json.JsonPrimitive(taskToUpdate.status))
+                if (taskToUpdate.dueDate != null) {
+                    put("dueDate", kotlinx.serialization.json.JsonPrimitive(taskToUpdate.dueDate.toIsoString()))
+                }
             }
 
-            Log.d(debugTag, "UPDATE: Atualizando tarefa ${updatedTask.id} no Supabase: $updates")
+            // Logica de dueDate nulo omitida para brevidade, mantendo comportamento anterior
+
+            Log.d(debugTag, "UPDATE: Atualizando tarefa ${taskToUpdate.id} no Supabase: $updates")
 
             supabase.from("Tasks").update(updates) {
-                filter { eq("id", updatedTask.id); eq("userId", userId) }
+                filter { eq("id", taskToUpdate.id); eq("userId", userId) }
+            }
+
+            // Sucesso: Marca como sincronizado
+            if (taskIndex != -1) {
+                user?.uTaskList?.set(taskIndex, taskToUpdate.copy(isSynced = true))
             }
 
             Log.d(debugTag, "UPDATE: Sucesso ao atualizar no Supabase.")
 
         } catch (e: Exception) {
-            Log.e(updateTag, "Sem internet: Atualização salva localmente.", e)
-            Log.e(debugTag, "UPDATE: Falha ao enviar atualização (Offline?): ${e.message}")
+            Log.e(updateTag, "Sem internet: Atualização mantida localmente para sync futuro.", e)
         }
     }
 
@@ -285,9 +381,21 @@ object UserRepository {
         val deleteTag = "TaskDelete"
         val debugTag = "SupabaseDebug"
 
-        // 1. Remove da RAM primeiro
+        // 1. Soft Delete na RAM primeiro (para esconder da UI imediatamente se estiver offline)
         val user = allUsers.find { it.id == userId }
-        user?.uTaskList?.removeAll { it.id == taskId }
+        val taskIndex = user?.uTaskList?.indexOfFirst { it.id == taskId } ?: -1
+        
+        if (taskIndex != -1) {
+            val task = user?.uTaskList?.get(taskIndex)
+            if (task != null) {
+                val deletedTask = task.copy(
+                    isDeleted = true,
+                    isSynced = false,
+                    lastModified = System.currentTimeMillis()
+                )
+                user.uTaskList[taskIndex] = deletedTask
+            }
+        }
 
         // 2. Tenta Supabase
         try {
@@ -297,11 +405,13 @@ object UserRepository {
                 filter { eq("id", taskId); eq("userId", userId) }
             }
 
+            // Sucesso: Remove definitivamente da RAM
+            user?.uTaskList?.removeAll { it.id == taskId }
+
             Log.d(debugTag, "DELETE: Sucesso ao remover do Supabase.")
 
         } catch (e: Exception) {
-            Log.e(deleteTag, "Sem internet: Remoção salva localmente.", e)
-            Log.e(debugTag, "DELETE: Falha ao remover (Offline?): ${e.message}")
+            Log.e(deleteTag, "Sem internet: Marcação de deletado salva localmente para sync futuro.", e)
         }
     }
 

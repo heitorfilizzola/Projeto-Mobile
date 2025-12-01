@@ -41,7 +41,10 @@ fun TaskListScreen(
         taskViewModel.loadTasks(userId)
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     TaskListContent(
+        userId = userId, // Pass userId
         tasks = tarefas,
         onLogoutClick = {
             scope.launch {
@@ -55,22 +58,31 @@ fun TaskListScreen(
         onAddTaskClick = { navController.navigate("add_task/$userId") },
         onEditTaskClick = { task -> navController.navigate("edit_task/${task.userId}/${task.id}") },
         onDeleteTask = { taskId -> taskViewModel.deleteTask(userId, taskId) },
-        onStatusChange = { task -> taskViewModel.changeTaskStatus(userId, task) }
+        onStatusChange = { task -> taskViewModel.changeTaskStatus(userId, task) },
+        onSyncClick = { id ->
+            taskViewModel.syncTasks(userId = id, onResult = { success: Boolean ->
+                val message = if (success) "Sincronizado com sucesso!" else "Falha na sincronização. Verifique sua conexão."
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            })
+        }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListContent(
+    userId: String, // Receive userId
     tasks: List<Tarefa>,
     onLogoutClick: () -> Unit,
     onAddTaskClick: () -> Unit,
     onEditTaskClick: (Tarefa) -> Unit,
     onDeleteTask: (String) -> Unit,
-    onStatusChange: (Tarefa) -> Unit
+    onStatusChange: (Tarefa) -> Unit,
+    onSyncClick: (String) -> Unit // Receive sync function
 ) {
     var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scope = rememberCoroutineScope() // Add coroutine scope here for toast
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -82,14 +94,20 @@ fun TaskListContent(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ){
-                        IconButton(onClick = onLogoutClick) {
-                            Icon(Icons.Default.Logout, contentDescription = "LogOut")
+                    Text("NoteSync", textAlign = TextAlign.Center) // Center title
+                },
+                navigationIcon = {
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(Icons.Default.Logout, contentDescription = "LogOut")
+                    }
+                },
+                actions = { // Add actions block for buttons on the right
+                    IconButton(onClick = {
+                        scope.launch {
+                            onSyncClick(userId)
                         }
-                        Text("NoteSync", textAlign = TextAlign.Center)
+                    }) {
+                        Icon(Icons.Default.Sync, contentDescription = "Sincronizar")
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -303,10 +321,10 @@ fun AddTaskScreen(
 ) {
     AddTaskContent(
         onBackClick = { navController.popBackStack() },
-        onSaveTask = { titulo, desc ->
+        onSaveTask = { titulo, desc, dueDate ->
             taskViewModel.addTask(
                 userId,
-                Tarefa(titulo = titulo, desc = desc, status = "A fazer", userId = userId)
+                Tarefa(titulo = titulo, desc = desc, status = "A fazer", userId = userId, dueDate = dueDate)
             )
             navController.popBackStack()
         }
@@ -317,11 +335,14 @@ fun AddTaskScreen(
 @Composable
 fun AddTaskContent(
     onBackClick: () -> Unit,
-    onSaveTask: (String, String) -> Unit
+    onSaveTask: (String, String, Long?) -> Unit
 ) {
     var titulo by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
+    var dueDate by remember { mutableStateOf<Long?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val calendar = java.util.Calendar.getInstance()
 
     Scaffold(
         topBar = {
@@ -358,11 +379,59 @@ fun AddTaskContent(
                 minLines = 3,
                 maxLines = 5
             )
+
+            Button(
+                onClick = {
+                    android.app.DatePickerDialog(
+                        context,
+                        { _, year, month, dayOfMonth ->
+                            calendar.set(java.util.Calendar.YEAR, year)
+                            calendar.set(java.util.Calendar.MONTH, month)
+                            calendar.set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth)
+
+                            android.app.TimePickerDialog(
+                                context,
+                                { _, hourOfDay, minute ->
+                                    calendar.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay)
+                                    calendar.set(java.util.Calendar.MINUTE, minute)
+                                    dueDate = calendar.timeInMillis
+                                },
+                                calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                                calendar.get(java.util.Calendar.MINUTE),
+                                true
+                            ).show()
+                        },
+                        calendar.get(java.util.Calendar.YEAR),
+                        calendar.get(java.util.Calendar.MONTH),
+                        calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                    ).show()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Icon(Icons.Default.DateRange, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = dueDate?.let {
+                        java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(it)
+                    } ?: "Definir Lembrete"
+                )
+            }
+
+            if (dueDate != null) {
+                TextButton(onClick = { dueDate = null }) {
+                    Text("Remover Lembrete", color = MaterialTheme.colorScheme.error)
+                }
+            }
+
             Button(
                 onClick = {
                     if (titulo.isNotBlank() && !isSaving) {
                         isSaving = true
-                        onSaveTask(titulo, desc)
+                        onSaveTask(titulo, desc, dueDate)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -397,9 +466,9 @@ fun EditTaskScreen(
     EditTaskContent(
         taskToEdit = taskToEdit,
         onBackClick = { navController.popBackStack() },
-        onSaveClick = { titulo, desc ->
+        onSaveClick = { titulo, desc, dueDate ->
             if (taskToEdit != null) {
-                val updatedTask = taskToEdit.copy(titulo = titulo, desc = desc)
+                val updatedTask = taskToEdit.copy(titulo = titulo, desc = desc, dueDate = dueDate)
                 taskViewModel.updateTask(userId, updatedTask)
                 navController.popBackStack()
             }
@@ -412,16 +481,20 @@ fun EditTaskScreen(
 fun EditTaskContent(
     taskToEdit: Tarefa?,
     onBackClick: () -> Unit,
-    onSaveClick: (String, String) -> Unit
+    onSaveClick: (String, String, Long?) -> Unit
 ) {
     var titulo by remember { mutableStateOf("") }
     var desc by remember { mutableStateOf("") }
+    var dueDate by remember { mutableStateOf<Long?>(null) }
     var isSaving by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val calendar = java.util.Calendar.getInstance()
 
     LaunchedEffect(taskToEdit) {
         if (taskToEdit != null) {
             titulo = taskToEdit.titulo
             desc = taskToEdit.desc
+            dueDate = taskToEdit.dueDate
         }
     }
 
@@ -468,9 +541,56 @@ fun EditTaskContent(
 
                 Button(
                     onClick = {
+                        android.app.DatePickerDialog(
+                            context,
+                            { _, year, month, dayOfMonth ->
+                                calendar.set(java.util.Calendar.YEAR, year)
+                                calendar.set(java.util.Calendar.MONTH, month)
+                                calendar.set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth)
+
+                                android.app.TimePickerDialog(
+                                    context,
+                                    { _, hourOfDay, minute ->
+                                        calendar.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay)
+                                        calendar.set(java.util.Calendar.MINUTE, minute)
+                                        dueDate = calendar.timeInMillis
+                                    },
+                                    calendar.get(java.util.Calendar.HOUR_OF_DAY),
+                                    calendar.get(java.util.Calendar.MINUTE),
+                                    true
+                                ).show()
+                            },
+                            calendar.get(java.util.Calendar.YEAR),
+                            calendar.get(java.util.Calendar.MONTH),
+                            calendar.get(java.util.Calendar.DAY_OF_MONTH)
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = dueDate?.let {
+                            java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(it)
+                        } ?: "Definir Lembrete"
+                    )
+                }
+
+                if (dueDate != null) {
+                    TextButton(onClick = { dueDate = null }) {
+                        Text("Remover Lembrete", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                Button(
+                    onClick = {
                         if (titulo.isNotBlank() && !isSaving) {
                             isSaving = true
-                            onSaveClick(titulo, desc)
+                            onSaveClick(titulo, desc, dueDate)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -494,6 +614,6 @@ fun EditTaskContent(
 @Composable
 fun AddTaskPreview() {
     MaterialTheme {
-        AddTaskContent(onBackClick = {}, onSaveTask = { _, _ -> })
+        AddTaskContent(onBackClick = {}, onSaveTask = { _, _, _ -> })
     }
 }

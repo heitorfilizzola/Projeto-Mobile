@@ -1,116 +1,283 @@
-# NoteSync
+📘 NoteSync — Aplicativo de Tarefas com Sincronização Offline-First e Supabase
 
-`NoteSync` é um aplicativo de gerenciamento de tarefas (to-do list) desenvolvido para Android. Ele permite que os usuários se registrem, façam login e gerenciem suas tarefas pessoais, sincronizando os dados com Supabase.
+NoteSync é um aplicativo de gerenciamento de tarefas desenvolvido para Android, com foco em sincronização inteligente, funcionamento offline, e arquitetura profissional baseada em MVVM.
+O app permite que usuários criem, editem e excluam tarefas mesmo sem internet, armazenando tudo localmente e sincronizando automaticamente com o Supabase quando a conexão for restabelecida.
 
-O projeto é construído inteiramente com tecnologias modernas de desenvolvimento Android, utilizando Kotlin e Jetpack Compose para a interface do usuário.
+Construído inteiramente com tecnologias modernas do ecossistema Android, o NoteSync utiliza Kotlin, Jetpack Compose, Room, Ktor Client, WorkManager e o backend Supabase.
 
-## Funcionalidades
+📱 Funcionalidades
 
-Com base na estrutura de navegação definida em `MainActivity.kt`, o aplicativo possui as seguintes telas e funcionalidades:
+Com base na estrutura de navegação definida em MainActivity.kt, o aplicativo oferece:
 
-* **Autenticação de Usuário:**
-    * Tela de Login (`/login`).
-    * Tela de Registro (`/register`).
-* **Gerenciamento de Tarefas:**
-    * **Listar Tarefas (`/tasks/{userId}`):** Exibe a lista de tarefas de um usuário específico.
-    * **Adicionar Tarefa (`/add_task/{userId}`):** Permite a criação de novas tarefas.
-    * **Editar Tarefa (`/edit_task/{userId}/{taskId}`):** Permite a modificação de uma tarefa existente.
-    * **Excluir Tarefas:** Funcionalidade implementada na tela de lista de tarefas.
-    * **Marcar como Concluída:** Permite alternar o status de uma tarefa (concluída/pendente).
+🔐 Autenticação de Usuário
 
-## Tecnologias Utilizadas
+Tela de Login (/login)
 
-Este projeto utiliza um stack moderno focado em Kotlin e desenvolvimento declarativo de UI:
+Tela de Registro (/register)
 
-* **Linguagem:** [Kotlin](https://kotlinlang.org/)
-* **UI:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (utilizando Material 3)
-* **Navegação:** [Navigation Compose](https://developer.android.com/jetpack/compose/navigation)
-* **Backend como Serviço (BaaS):** [Supabase](https://supabase.io/)
-    * Autenticação (`auth-kt`)
-    * Banco de Dados (`postgrest-kt`)
-    * Tempo Real (`realtime-kt`)
-* **Programação Assíncrona:** Kotlin Coroutines (visto em `MainActivity.kt` com `coroutineScope.launch`)
-* **Networking:** [Ktor Client](https://ktor.io/docs/client-overview.html)
-* **Serialização:** [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization)
+📝 Gerenciamento de Tarefas
 
-## Configuração do Projeto
+Listar Tarefas (/tasks/{userId})
 
-* **Nome do App:** `NoteSync`
-* **ID da Aplicação:** `com.filizzola.projeto_mobile`
-* **SDK Mínimo (minSdk):** 24
-* **SDK Alvo (targetSdk):** 36
-* **SDK de Compilação (compileSdk):** 36
-* **Versão do Java:** 11
+Adicionar Tarefa (/add_task/{userId})
 
-## Como Executar
+Editar Tarefa (/edit_task/{userId}/{taskId})
 
-1.  Clone este repositório.
-2.  Abra o projeto no Android Studio.
-3.  **Configurar o Supabase:** O projeto requer credenciais do Supabase para funcionar. Atualize o arquivo `app/src/main/java/com/filizzola/projeto_mobile/MainActivity.kt` com sua URL e Chave Anônima (public-anon-key) do Supabase:
+Excluir Tarefa (na tela de lista)
 
-    ```kotlin
-    val supabase = createSupabaseClient(
-        supabaseUrl = "SUA_URL_SUPABASE",
-        supabaseKey = "SUA_CHAVE_ANON_SUPABASE"
-    ) {
-        install(Auth)
-        install(Postgrest)
-    }
-    ```
+Marcar como concluída
 
-4.  Sincronize as dependências do Gradle.
-5.  Execute o aplicativo em um emulador Android ou dispositivo físico.
+Persistência offline (Room)
 
-## Arquitetura e Padrões de Dados
+Sincronização com Supabase
 
-Esta seção detalha a arquitetura do software, as estratégias de sincronização de dados e os padrões de persistência adotados para garantir que o `NoteSync` seja robusto, responsivo e funcional mesmo em condições de rede instáveis.
+Detecção de conectividade e operação offline-first
 
-### Arquitetura de Software
+Fila de sincronização automática
 
-O aplicativo adota a arquitetura **MVVM (Model-View-ViewModel)**, promovendo uma clara separação de responsabilidades entre as camadas:
+🌐 Sincronização e Conectividade
 
-*   **View (UI Layer)**: Composta por Componíveis (`@Composable`) do Jetpack Compose, a View é responsável por renderizar a interface do usuário e capturar eventos de interação (cliques, gestos). Ela observa os dados expostos pelo ViewModel de forma reativa e não contém lógica de negócio.
+Detecta quando o dispositivo entra/saí da internet
 
-*   **ViewModel (Domain Layer)**: Atua como um intermediário entre a View e o Data Layer. O ViewModel prepara e gerencia o estado da UI, sobrevive a mudanças de configuração (como rotação de tela) e expõe os dados para a View através de `StateFlow` ou `LiveData`. Ele contém a lógica de apresentação e delega as operações de dados (busca, escrita) para os Repositórios.
+Reenvia operações pendentes automaticamente
 
-*   **Model (Data Layer)**: É a camada responsável pela gestão dos dados do aplicativo. Ela é composta por:
-    *   **Repositórios**: Seguem o padrão de Repositório, atuando como a única fonte de verdade para os dados. Eles abstraem a origem dos dados (banco de dados local ou API remota), decidindo de onde buscar ou para onde salvar as informações.
-    *   **Fontes de Dados (Data Sources)**: Classes que interagem diretamente com o banco de dados local (Room/SQLite) e a API remota (Supabase).
+Faz merge entre registros locais e remotos
 
-### Como funciona a sincronização local ↔ Supabase
+Resolve conflitos usando last_write_wins baseado em updated_at
 
-A sincronização foi desenhada para garantir uma experiência *offline-first*.
+Sincroniza exclusões nos dois sentidos
 
-*   **Condições de Sincronização**: A sincronização é acionada automaticamente quando o aplicativo detecta uma conexão ativa com a internet. Isso pode ocorrer no início do app, periodicamente em segundo plano, ou após a conclusão de uma operação de escrita (CRUD).
+Exibe indicador de conectividade e última sincronização
 
-*   **Detecção de Conectividade**: O app monitora o estado da rede. Operações que exigem comunicação com o Supabase (como login ou o envio de dados em fila) só são tentadas quando o dispositivo está online.
+🛠️ Tecnologias Utilizadas
+Categoria	Tecnologia
+Linguagem	Kotlin
+UI	Jetpack Compose + Material 3
+Navegação	Navigation Compose
+Backend	Supabase (Auth + Postgrest + Realtime)
+Programação Assíncrona	Kotlin Coroutines
+Banco Local	Room
+Networking	Ktor Client
+Serialização	Kotlinx Serialization
+Background Jobs	WorkManager
+Detecção de Rede	ConnectivityManager + NetworkCallback
+Logs	Timber
+Memory Leaks	LeakCanary
+⚙️ Configuração do Projeto
 
-*   **Fallback para Offline**: Quando o dispositivo está offline, o aplicativo continua totalmente funcional. Todas as operações de leitura e escrita são direcionadas exclusivamente para o banco de dados local. As operações de escrita são adicionadas a uma fila de sincronização (ou marcadas com um status "pendente").
+Nome do App: NoteSync
 
-*   **Estratégia de Merge e Resolução de Conflitos**:
-    1.  **Fila de Sincronização**: Ao ficar online, um serviço em segundo plano processa a fila de operações pendentes, enviando-as para o Supabase.
-    2.  **Resolução de Conflitos**: A estratégia padrão é a de **"última escrita vence" (last write wins)**, baseada em um campo `updated_at` (timestamp). Antes de enviar uma atualização, o app pode verificar se o registro no servidor foi modificado por outro dispositivo. Se a versão remota for mais nova que a base da modificação local, uma lógica de merge pode ser aplicada, embora o mais comum seja sobrescrever com o dado mais recente.
+ID do Pacote: com.filizzola.projeto_mobile
 
-### Quais partes persistem localmente
+minSdk: 24
 
-Para suportar a funcionalidade offline, uma parte essencial dos dados é persistida localmente usando um banco de dados **Room**.
+targetSdk: 36
 
-*   **Schema**: O schema do banco de dados local (Room) espelha a estrutura das tabelas do Supabase (`tasks`, `users`, etc.), armazenando apenas os dados relevantes para o usuário logado.
+compileSdk: 36
 
-*   **Formatos**: Os dados são armazenados em tipos primitivos do SQLite. Tipos complexos são serializados para String (JSON) usando `TypeConverters` do Room, se necessário.
+Java: 11
 
-*   **Versionamento**: A evolução do schema do banco de dados é gerenciada através de **migrações do Room (`Migration`)**. Cada vez que o modelo de dados é alterado, uma nova migração é escrita para garantir que os usuários existentes não percam seus dados ao atualizar o aplicativo.
+▶ Como Executar
 
-### Fluxos de Dados Principais
+Clone o repositório
 
-Os fluxos de dados foram projetados para priorizar a reatividade e a consistência.
+git clone https://github.com/SEU_USUARIO/NoteSync.git
 
-*   **CRUD Offline → Sincronização**:
-    1.  Toda operação de **C**reate, **U**pdate ou **D**elete é executada **primeiro** no banco de dados local.
-    2.  A UI é atualizada imediatamente, proporcionando feedback instantâneo ao usuário.
-    3.  A operação é marcada como "pendente de sincronização".
-    4.  Quando houver conexão, a operação é enviada para o Supabase. Em caso de sucesso, a marcação "pendente" é removida.
 
-*   **Leitura Sempre Local Primeiro**: Para garantir a velocidade e a disponibilidade, todas as leituras de dados (`READ`) são feitas diretamente do banco de dados local. O app ouve as atualizações do Supabase em tempo real (quando online) para atualizar a base local, que por sua vez atualiza a UI.
+Abra no Android Studio
 
-*   **UI Reativa**: A `View` observa `StateFlows` expostos pelo `ViewModel`. Esses fluxos são alimentados pelos Repositórios, que, por sua vez, leem do banco de dados local. Qualquer alteração nos dados locais (seja por uma ação do usuário ou uma sincronização em background) é propagada automaticamente até a UI, que se recompõe para exibir o estado mais recente.
+Configurar Supabase
+
+Edite as credenciais em MainActivity.kt:
+
+val supabase = createSupabaseClient(
+    supabaseUrl = "SUA_URL_SUPABASE",
+    supabaseKey = "SUA_CHAVE_ANON_SUPABASE"
+) {
+    install(Auth)
+    install(Postgrest)
+}
+
+
+Sincronize o Gradle
+
+Execute no Emulador ou Dispositivo Físico
+
+🧩 Arquitetura e Padrões de Dados
+
+O NoteSync utiliza a arquitetura MVVM, garantindo separação clara entre UI, lógica de apresentação e acesso a dados.
+
+🖼 1. View (UI Layer)
+
+Implementada com Jetpack Compose, funciona de forma declarativa e reativa:
+
+Observa StateFlow/LiveData expostos pelo ViewModel
+
+Reage automaticamente a atualizações
+
+Não contém lógica de negócio
+
+🧠 2. ViewModel (Domain/Presentation Layer)
+
+Responsável por:
+
+Gerenciar o estado da UI
+
+Validar dados
+
+Orquestrar operações de CRUD
+
+Sincronizar com repositórios
+
+Garantir ciclo de vida seguro com viewModelScope
+
+Notificar a UI sobre conectividade e status de sincronização
+
+🗂 3. Model (Data Layer)
+
+Inclui:
+
+Repositórios
+
+Responsáveis por:
+
+Unificar acesso a Room + Supabase
+
+Gerenciar fila offline
+
+Resolver conflitos
+
+Sincronizar alterações
+
+Aplicar estratégias de merge
+
+Versionar tarefas com timestamps
+
+Data Sources
+
+LocalDataSource (Room)
+
+RemoteDataSource (Supabase)
+
+SyncDataSource (fila + políticas de retry)
+
+🔄 Sincronização Local ↔ Supabase
+
+A sincronização do NoteSync segue um padrão totalmente offline-first.
+
+📡 1. Detecção de Conectividade
+
+O app monitora alterações de rede usando:
+
+ConnectivityManager
+
+NetworkCallback
+
+Sem internet:
+
+Todas as operações são locais
+
+CRUD funciona normalmente
+
+Operações são marcadas como pendentes
+
+📨 2. Fila de Operações
+
+Quando offline:
+
+Criação → adiciona ao Room e à fila
+
+Edição → salva localmente e marca pendente
+
+Exclusão → remove localmente e adiciona operação na fila
+
+🔁 3. Quando volta a internet
+
+O WorkManager dispara automaticamente:
+
+Envio da fila
+
+Download de alterações do Supabase
+
+Merge local/remoto
+
+Limpeza das marcações pendentes
+
+Atualização da UI
+
+⚔ 4. Resolução de Conflitos
+
+Estratégia: last write wins (updated_at)
+
+O app compara:
+
+local.updated_at
+
+remote.updated_at
+
+E define qual versão prevalece.
+
+🗑 5. Sincronização de Exclusões
+
+Delete local → Supabase apaga
+
+Delete remoto → app apaga localmente
+
+Bidirecional e consistente.
+
+💾 Persistência Local — O que fica no Room
+
+Tarefas do usuário logado
+
+Campos espelhados do Supabase
+
+Flag pendingSync
+
+Timestamps (created_at, updated_at)
+
+Operações pendentes
+
+🔄 Fluxos de Dados Principais
+CRUD Offline → Sincronização
+
+Usuário cria/edita/exclui
+
+Room grava imediatamente
+
+UI atualiza instantaneamente
+
+Operação vai para a fila (offline)
+
+Quando online → fila é enviada para Supabase
+
+Leitura Sempre Local
+
+A UI lê sempre do Room
+
+Quando online → Room recebe atualizações do Supabase
+
+UI 100% Reativa
+
+Compose reage a alterações no banco
+
+Atualizações são instantâneas
+
+🔍 Observabilidade
+
+Logs com Timber
+
+Métricas de sincronização
+
+Tracking opcional com Crashlytics
+
+🧼 Prevenção de Memory Leaks
+
+ViewModels independentes de Context
+
+Corrotinas canceladas
+
+LeakCanary instalado no build de debug
+
+📄 Conclusão
+
+O NoteSync é um aplicativo Android moderno, robusto e preparado para ambientes reais, suportando uso offline, queda de internet, sincronização confiável e arquitetura escalável.
