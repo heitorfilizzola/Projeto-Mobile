@@ -1,48 +1,39 @@
 package com.filizzola.projeto_mobile.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.filizzola.projeto_mobile.data.Tarefa
-import com.filizzola.projeto_mobile.data.User
-import com.filizzola.projeto_mobile.data.UserRepository
+import com.filizzola.projeto_mobile.data.repository.TaskRepository
 import com.filizzola.projeto_mobile.utils.LoginManager
 import com.filizzola.projeto_mobile.utils.NotificationHelper
-import com.filizzola.projeto_mobile.utils.SyncManager
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TaskViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class TaskViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val taskRepository: TaskRepository,
+    private val loginManager: LoginManager
+) : ViewModel() {
 
     private val _tasks = MutableStateFlow<List<Tarefa>>(emptyList())
     val tasks: StateFlow<List<Tarefa>> = _tasks.asStateFlow()
 
-    private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user.asStateFlow()
-
-    // Estado do consentimento
     private val _syncConsent = MutableStateFlow(false)
     val syncConsent: StateFlow<Boolean> = _syncConsent.asStateFlow()
 
-    private val loginManager = LoginManager(application)
-    private val syncManager = SyncManager(application)
-
     fun loadTasks(userId: String) {
         viewModelScope.launch {
-            val user = UserRepository.allUsers.find { it.id == userId }
-            _user.value = user
-            _tasks.value = user?.uTaskList?.filter { !it.isDeleted }?.toList() ?: emptyList()
-
-            // Carrega também o status do consentimento
-            loadSyncConsent()
-        }
-    }
-
-    fun loadSyncConsent() {
-        viewModelScope.launch {
             _syncConsent.value = loginManager.hasSyncConsent()
+            taskRepository.getTasks(userId).collect {
+                _tasks.value = it
+            }
         }
     }
 
@@ -53,37 +44,24 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private suspend fun saveToDisk(userId: String) {
-        val user = UserRepository.allUsers.find { it.id == userId }
-        if (user != null) {
-            syncManager.saveTaskLocally(userId, user.uTaskList)
-        }
-    }
-
     fun addTask(userId: String, task: Tarefa) {
         viewModelScope.launch {
-            UserRepository.addTaskToUser(userId, task)
-            NotificationHelper.scheduleNotification(getApplication(), task)
-            saveToDisk(userId)
-            loadTasks(userId)
+            taskRepository.saveTask(task)
+            NotificationHelper.scheduleNotification(context, task)
         }
     }
 
     fun updateTask(userId: String, task: Tarefa) {
         viewModelScope.launch {
-            UserRepository.updateTaskForUser(userId, task)
-            NotificationHelper.scheduleNotification(getApplication(), task)
-            saveToDisk(userId)
-            loadTasks(userId)
+            taskRepository.updateTask(task)
+            NotificationHelper.scheduleNotification(context, task)
         }
     }
 
     fun deleteTask(userId: String, taskId: String) {
         viewModelScope.launch {
-            UserRepository.deleteTaskForUser(userId, taskId)
-            NotificationHelper.cancelNotification(getApplication(), taskId)
-            saveToDisk(userId)
-            loadTasks(userId)
+            taskRepository.deleteTask(taskId)
+            NotificationHelper.cancelNotification(context, taskId)
         }
     }
 
@@ -91,39 +69,30 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val newStatus = if (task.status == "A fazer") "Feito" else "A fazer"
             val updatedTask = task.copy(status = newStatus)
-            UserRepository.updateTaskForUser(userId, updatedTask)
+
+            taskRepository.updateTask(updatedTask)
 
             if (newStatus == "Feito") {
-                NotificationHelper.cancelNotification(getApplication(), task.id)
+                NotificationHelper.cancelNotification(context, task.id)
             } else {
-                NotificationHelper.scheduleNotification(getApplication(), updatedTask)
+                NotificationHelper.scheduleNotification(context, updatedTask)
             }
-
-            saveToDisk(userId)
-            loadTasks(userId)
         }
     }
 
     fun syncTasks(userId: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            // Verifica o consentimento antes de tentar sincronizar via ViewModel também
             if (!loginManager.hasSyncConsent()) {
-                onResult(false) // Indica falha (ou falta de permissão)
+                onResult(false)
                 return@launch
             }
-
-            val result = UserRepository.syncUserData(userId)
-            if (result != null) {
-                saveToDisk(userId)
-            }
-            loadTasks(userId)
-            onResult(result != null)
+            taskRepository.syncTasksRemote(userId)
+            onResult(true)
         }
     }
 
     fun logout() {
         viewModelScope.launch {
-            UserRepository.logout()
             loginManager.clearLoggedUser()
         }
     }

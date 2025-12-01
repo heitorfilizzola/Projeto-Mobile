@@ -2,23 +2,21 @@ package com.filizzola.projeto_mobile.ui
 
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.result.launch
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -28,18 +26,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -52,21 +49,14 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.filizzola.projeto_mobile.R
-import com.filizzola.projeto_mobile.data.User
-import com.filizzola.projeto_mobile.data.UserRepository
-import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.filizzola.projeto_mobile.viewmodel.LoginViewModel
+import com.filizzola.projeto_mobile.R
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import com.filizzola.projeto_mobile.viewmodel.LoginState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.testTag
+import com.filizzola.projeto_mobile.viewmodel.LoginViewModel
 
 /**
- * Composable para exibir a imagem de fundo da tela.
+ * Composable for displaying the background image of the screen.
  */
 @Composable
 fun bgImage(modifier: Modifier = Modifier) {
@@ -78,47 +68,44 @@ fun bgImage(modifier: Modifier = Modifier) {
     )
 }
 
-
+/**
+ * The main login screen composable. It handles user input,
+ * authentication state, and navigation.
+ */
 @Composable
-fun GreetingLogin(
+fun LoginScreen(
     modifier: Modifier = Modifier,
-    onLoginSuccess: (User) -> Unit,
-    onNavigateToRegister: () -> Unit,
-    onClickTaski: () -> Unit,
+    onLoginSuccess: (String) -> Unit,
+    onRegisterClick: () -> Unit,
     loginViewModel: LoginViewModel = viewModel()
 ) {
     val emailInput by loginViewModel.email.collectAsState()
     val passInput by loginViewModel.password.collectAsState()
     val loginState by loginViewModel.loginState.collectAsState()
 
-    val borderGray = Color(0xFFCACACA)
     val context = LocalContext.current
-    val appIcons = Icons.Outlined
-    val bgColor = MaterialTheme.colorScheme.background
 
+    // Effect to handle side-effects of login state changes (e.g., showing toasts, navigating).
     LaunchedEffect(loginState) {
         when (val state = loginState) {
             is LoginState.Success -> {
                 Toast.makeText(context, "Login bem-sucedido!", Toast.LENGTH_SHORT).show()
-                Log.d("loginDone", "Login com sucesso do usuario ${state.user}")
-                onLoginSuccess(state.user)
+                Log.d("LoginScreen", "Login successful for user: ${state.user.id}")
+                onLoginSuccess(state.user.id) // Pass only the user ID on success.
             }
             is LoginState.Error -> {
                 Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
             }
-            else -> {}
+            else -> {
+                // Handle other states like Loading or Idle if necessary.
+            }
         }
     }
 
-    GreetingLoginContent(
-        email = emailInput,
-        password = passInput,
-        onEmailChange = { loginViewModel.onEmailChange(it) },
-        onPasswordChange = { loginViewModel.onPasswordChange(it) },
-        onLoginClick = { loginViewModel.login() },
-        onRegisterClick = onNavigateToRegister,
-        isLoading = loginState == LoginState.Loading
-    )
+    // UI Layout
+    val borderGray = Color(0xFFCACACA)
+    val appIcons = Icons.Outlined
+    val bgColor = MaterialTheme.colorScheme.background
 
     bgImage()
 
@@ -127,14 +114,12 @@ fun GreetingLogin(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .fillMaxWidth()
             .imePadding(),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             color = bgColor,
             modifier = Modifier
-//                .fillMaxHeight(0.60f)
                 .fillMaxWidth(0.85f)
                 .shadow(8.dp)
                 .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
@@ -142,22 +127,19 @@ fun GreetingLogin(
         ) {
             Column(
                 modifier = Modifier
-                    .statusBarsPadding()
                     .padding(horizontal = 40.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-//                verticalArrangement = Arrangement.Center
             ) {
-
                 Text(
                     text = "NoteSync",
-                    modifier = modifier.padding(bottom = 32.dp, top = 32.dp),
+                    modifier = modifier.padding(vertical = 32.dp),
                     fontSize = 30.sp
                 )
 
                 LoginField(
                     label = "E-Mail",
-                    leadingIcon = { Icon(imageVector = appIcons.Email, contentDescription = "Email icon") },
+                    leadingIcon = { Icon(appIcons.Email, "Email icon") },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
@@ -167,11 +149,12 @@ fun GreetingLogin(
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .fillMaxWidth()
+                        .testTag("email_field")
                 )
 
                 LoginField(
                     label = "Password",
-                    leadingIcon = { Icon(imageVector = appIcons.Lock, contentDescription = "Padlock icon") },
+                    leadingIcon = { Icon(appIcons.Lock, "Padlock icon") },
                     keyboardOptions = KeyboardOptions.Default.copy(
                         keyboardType = KeyboardType.Password,
                         imeAction = ImeAction.Send
@@ -182,118 +165,15 @@ fun GreetingLogin(
                     modifier = Modifier
                         .padding(bottom = 16.dp)
                         .fillMaxWidth()
-                )
-
-                Button(
-                    onClick = { loginViewModel.login() },
-                    modifier = Modifier.padding(top = 16.dp),
-                    enabled = loginState != LoginState.Loading
-                ) {
-                    Text(text = "Login", fontSize = 24.sp)
-                }
-
-                    Text("Não tem uma conta? ",
-                        modifier = Modifier.padding(top = 24.dp)) // <-- Texto 1
-                    Text(                     // <-- Texto 2
-                        modifier = Modifier
-                            .clickable { onNavigateToRegister() }
-                            .padding(bottom = 32.dp),
-                        text = buildAnnotatedString {
-                            withStyle(
-                                style = SpanStyle(
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            ) {
-                                append("Registre-se")
-                            }
-                        }
-                    )
-
-                }
-            }
-        }
-    }
-
-
-
-@Composable
-fun GreetingLoginContent(
-    email: String,
-    password: String,
-    onEmailChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit,
-    onRegisterClick: () -> Unit,
-    isLoading: Boolean
-) {
-    val borderGray = Color(0xFFCACACA)
-    val appIcons = Icons.Outlined
-    val bgColor = MaterialTheme.colorScheme.background
-
-    bgImage() // Sua imagem de fundo
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .imePadding(),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            color = bgColor,
-            modifier = Modifier
-                .fillMaxWidth(0.85f)
-                .shadow(8.dp)
-                .border(width = 6.dp, color = borderGray, shape = RoundedCornerShape(65.dp)),
-            shape = RoundedCornerShape(65.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(horizontal = 40.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = "NoteSync",
-                    modifier = Modifier.padding(vertical = 32.dp),
-                    fontSize = 30.sp
-                )
-
-                // CAMPO EMAIL COM TAG
-                LoginField(
-                    label = "E-Mail",
-                    leadingIcon = { Icon(appIcons.Email, "Email icon") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                    value = email,
-                    onValueChanged = onEmailChange,
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .fillMaxWidth()
-                        .testTag("email_field") // <--- TAG
-                )
-
-                // CAMPO SENHA COM TAG
-                LoginField(
-                    label = "Password",
-                    leadingIcon = { Icon(appIcons.Lock, "Padlock icon") },
-                    keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password, imeAction = ImeAction.Send),
-                    value = password,
-                    onValueChanged = onPasswordChange,
-                    isPassword = true,
-                    modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .fillMaxWidth()
                         .testTag("password_field")
                 )
 
                 Button(
-                    onClick = onLoginClick,
+                    onClick = { loginViewModel.login() },
                     modifier = Modifier
                         .padding(top = 16.dp)
                         .testTag("login_button"),
-                    enabled = !isLoading
+                    enabled = loginState !is LoginState.Loading
                 ) {
                     Text(text = "Login", fontSize = 24.sp)
                 }
@@ -306,7 +186,12 @@ fun GreetingLoginContent(
                         .padding(bottom = 32.dp)
                         .testTag("register_text"),
                     text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                        withStyle(
+                            style = SpanStyle(
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
                             append("Registre-se")
                         }
                     }
@@ -316,6 +201,9 @@ fun GreetingLoginContent(
     }
 }
 
+/**
+ * A standardized text field for the login screen.
+ */
 @Composable
 fun LoginField(
     label: String,
@@ -338,14 +226,16 @@ fun LoginField(
     )
 }
 
+/**
+ * Preview for the LoginScreen.
+ */
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun LoginScreenPreview() {
     ProjetoMobileTheme {
-        GreetingLogin(
+        LoginScreen(
             onLoginSuccess = {},
-            onNavigateToRegister = {},
-            onClickTaski = {}
+            onRegisterClick = {}
         )
     }
 }

@@ -1,100 +1,48 @@
 package com.filizzola.projeto_mobile
 
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.filizzola.projeto_mobile.data.UserRepository
-import com.filizzola.projeto_mobile.ui.AddTaskScreen
-import com.filizzola.projeto_mobile.ui.EditTaskScreen
-import com.filizzola.projeto_mobile.ui.GreetingLogin
-import com.filizzola.projeto_mobile.ui.RegisterScreen
-import com.filizzola.projeto_mobile.ui.TaskListScreen
-import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
-import com.filizzola.projeto_mobile.utils.LoginManager
-import com.filizzola.projeto_mobile.utils.NetworkManager
-import com.filizzola.projeto_mobile.utils.SyncManager
-import io.github.jan.supabase.auth.Auth
-import io.github.jan.supabase.auth.auth
-import io.github.jan.supabase.auth.user.UserSession
-import io.github.jan.supabase.createSupabaseClient
-import io.github.jan.supabase.postgrest.Postgrest
-import kotlinx.coroutines.launch
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.ExistingPeriodicWorkPolicy
-import java.util.concurrent.TimeUnit
+import com.filizzola.projeto_mobile.ui.AddTaskScreen
+import com.filizzola.projeto_mobile.ui.EditTaskScreen
+import com.filizzola.projeto_mobile.ui.LoginScreen
+import com.filizzola.projeto_mobile.ui.RegisterScreen
+import com.filizzola.projeto_mobile.ui.TaskListScreen
+import com.filizzola.projeto_mobile.ui.theme.ProjetoMobileTheme
 import com.filizzola.projeto_mobile.worker.SyncWorker
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.TimeUnit
 
-
-object SupabaseConfig {
-    val client by lazy {
-        createSupabaseClient(
-//            supabaseUrl = "https://xyzcompany.supabase.co",
-//            supabaseKey = "publishable-or-anon-key"
-            supabaseUrl = "https://hotdhewlluokhhxamydi.supabase.co/",
-            supabaseKey = "sb_publishable_Te2ter0ZFhL4kZKozwFgEA_aFhW7_lD"
-        ) {
-            install(Auth)
-            install(Postgrest)
-        }
-    }
-}
-
-val supabase get() = SupabaseConfig.client
-
-
+@AndroidEntryPoint // <--- ISSO É OBRIGATÓRIO AGORA
 class MainActivity : ComponentActivity() {
-
-    private lateinit var networkManager: NetworkManager
-    private lateinit var loginManager: LoginManager
-    private lateinit var syncManager: SyncManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        networkManager = NetworkManager(this)
-        loginManager = LoginManager(this)
-        syncManager = SyncManager(this)
-
-        checkNetworkConnection()
+        // O WorkManager agora usa o HiltWorkerFactory configurado no MyApplication
         schedulePeriodicSync()
 
         setContent {
             ProjetoMobileTheme {
-                AppNavigation(loginManager, syncManager)
+                AppNavigation()
             }
-        }
-    }
-
-    private fun checkNetworkConnection() {
-        lifecycleScope.launch {
-            networkManager.checkConnection { }
         }
     }
 
@@ -118,95 +66,29 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) {
+private fun AppNavigation() {
     val navController = rememberNavController()
-    var triggerRecomposition by remember { mutableStateOf(0) }
-    var startDestination by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-
-    val json = remember { Json { ignoreUnknownKeys = true } }
-
-    LaunchedEffect(Unit) {
-        val savedUserId = loginManager.getLoggedUser()
-        val savedSessionJson = loginManager.getSession()
-
-        if (savedUserId != null) {
-            if (savedSessionJson != null) {
-                try {
-                    val session = json.decodeFromString<UserSession>(savedSessionJson)
-                    supabase.auth.importSession(session)
-                    Log.d("Auth", "Sessão restaurada com sucesso!")
-                } catch (e: Exception) {
-                    Log.e("Auth", "Erro ao restaurar sessão.", e)
-                }
-            }
-
-            val localTasks = syncManager.loadTasksFromLocal(savedUserId)
-            if (localTasks.isNotEmpty()) {
-                UserRepository.loadFromCache(savedUserId, localTasks)
-                startDestination = Routes.tasks(savedUserId)
-            }
-
-            launch {
-                val syncedTasks = UserRepository.syncUserData(savedUserId)
-
-                if (syncedTasks != null) {
-                    syncManager.saveTaskLocally(savedUserId, syncedTasks)
-
-                    val currentSession = supabase.auth.currentSessionOrNull()
-                    if (currentSession != null) {
-                        loginManager.saveSession(json.encodeToString(currentSession))
-                    }
-
-                    if (startDestination == null) {
-                        startDestination = Routes.tasks(savedUserId)
-                    }
-                } else {
-                    if (localTasks.isEmpty()) {
-                        loginManager.clearLoggedUser()
-                        startDestination = Routes.LOGIN
-                    }
-                }
-            }
-        } else {
-            startDestination = Routes.LOGIN
-        }
-    }
-
-    if (startDestination == null) {
-        return
-    }
+    // Nota: A lógica de sessão e redirecionamento idealmente ficaria em um MainViewModel
+    // Para simplificar e fazer rodar, vamos iniciar no Login e deixar o LoginViewModel/TaskViewModel gerenciar o estado.
+    val startDestination = Routes.LOGIN
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize()) {
             NavHost(
                 navController = navController,
-                startDestination = startDestination!!
+                startDestination = startDestination
             ) {
                 composable(Routes.LOGIN) {
-                    GreetingLogin(
-                        modifier = Modifier.padding(innerPadding),
-                        onNavigateToRegister = {
-                            navController.navigate(Routes.REGISTER)
-                        },
-                        onLoginSuccess = { user ->
-                            coroutineScope.launch {
-                                loginManager.saveLoggedUser(user.id)
-
-                                val session = supabase.auth.currentSessionOrNull()
-                                if (session != null) {
-                                    val sessionString = json.encodeToString(session)
-                                    loginManager.saveSession(sessionString)
-                                    Log.d("Auth", "Sessão salva no disco.")
-                                }
-
-                                syncManager.saveTaskLocally(user.id, user.uTaskList)
-                                navController.navigate(Routes.tasks(user.id)) {
-                                    popUpTo(Routes.LOGIN) { inclusive = true }
-                                }
+                    // O Hilt injeta o ViewModel automaticamente aqui dentro
+                    LoginScreen(
+                        onLoginSuccess = { userId ->
+                            navController.navigate(Routes.tasks(userId)) {
+                                popUpTo(Routes.LOGIN) { inclusive = true }
                             }
                         },
-                        onClickTaski = { }
+                        onRegisterClick = {
+                            navController.navigate(Routes.REGISTER)
+                        }
                     )
                 }
 
@@ -214,29 +96,30 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                     route = Routes.TASKS,
                     arguments = listOf(navArgument("userId") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    backStackEntry.arguments?.getString("userId")?.let { userId ->
-                        TaskListScreen(
-                            navController = navController,
-                            userId = userId,
-                            onLogout = {
-                                coroutineScope.launch {
-                                    loginManager.clearLoggedUser()
-                                }
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+
+                    // TaskListScreen deve ser atualizada para usar hiltViewModel() internamente ou receber via parâmetro
+                    // Assumindo que sua TaskListScreen já usa viewModel() ou hiltViewModel():
+                    TaskListScreen(
+                        navController = navController,
+                        userId = userId,
+                        onLogout = {
+                            navController.navigate(Routes.LOGIN) {
+                                popUpTo(Routes.TASKS) { inclusive = true }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
 
                 composable(
                     route = Routes.ADD_TASK,
                     arguments = listOf(navArgument("userId") { type = NavType.StringType })
                 ) { backStackEntry ->
-                    backStackEntry.arguments?.getString("userId")?.let { userId ->
-                        AddTaskScreen(
-                            navController = navController,
-                            userId = userId
-                        )
-                    }
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    AddTaskScreen(
+                        navController = navController,
+                        userId = userId
+                    )
                 }
 
                 composable(
@@ -246,22 +129,19 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                         navArgument("taskId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val userId = backStackEntry.arguments?.getString("userId")
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
                     val taskId = backStackEntry.arguments?.getString("taskId")
-                    if (userId != null) {
-                        EditTaskScreen(
-                            navController = navController,
-                            userId = userId,
-                            taskId = taskId
-                        )
-                    }
+                    EditTaskScreen(
+                        navController = navController,
+                        userId = userId,
+                        taskId = taskId
+                    )
                 }
 
                 composable(Routes.REGISTER) {
                     RegisterScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        onRegisterClick = { navController.navigate(Routes.LOGIN) },
-                        onLoginBtnClick = { navController.navigate(Routes.LOGIN) }
+                        onRegisterClick = { navController.popBackStack() },
+                        onLoginBtnClick = { navController.popBackStack() }
                     )
                 }
             }
@@ -277,6 +157,6 @@ private object Routes {
     const val EDIT_TASK = "edit_task/{userId}/{taskId}"
 
     fun tasks(userId: String) = "tasks/$userId"
-    fun addTask(userId: String) = "add_task/$userId"
-    fun editTask(userId: String, taskId: String) = "edit_task/$userId/$taskId"
+    // fun addTask(userId: String) = "add_task/$userId" // Se precisar
+    // fun editTask(userId: String, taskId: String) = "edit_task/$userId/$taskId"
 }

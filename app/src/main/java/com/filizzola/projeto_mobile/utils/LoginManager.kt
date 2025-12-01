@@ -44,12 +44,10 @@ class LoginManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.remove(USER_ID_KEY)
             preferences.remove(USER_SESSION_KEY)
-            // Opcional: Remover consentimento ao deslogar ou manter
-            // preferences.remove(SYNC_CONSENT_KEY)
+
         }
     }
 
-    // --- Métodos de Consentimento ---
 
     suspend fun setSyncConsent(isAllowed: Boolean) {
         context.dataStore.edit { preferences ->
@@ -59,7 +57,6 @@ class LoginManager(private val context: Context) {
 
     suspend fun hasSyncConsent(): Boolean {
         val preferences = context.dataStore.data.first()
-        // Padrão é false (não permitido) até que o usuário ative
         return preferences[SYNC_CONSENT_KEY] ?: false
     }
 }
