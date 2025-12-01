@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,17 +37,21 @@ fun TaskListScreen(
     taskViewModel: TaskViewModel = viewModel()
 ) {
     val tarefas by taskViewModel.tasks.collectAsState()
+    val syncConsent by taskViewModel.syncConsent.collectAsState() // Coleta o consentimento
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
         taskViewModel.loadTasks(userId)
+        // O consentimento é carregado dentro de loadTasks agora
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
 
     TaskListContent(
-        userId = userId, // Pass userId
+        userId = userId,
         tasks = tarefas,
+        syncConsent = syncConsent,
+        onConsentChange = { isGranted -> taskViewModel.updateSyncConsent(isGranted) },
         onLogoutClick = {
             scope.launch {
                 taskViewModel.logout()
@@ -61,7 +67,7 @@ fun TaskListScreen(
         onStatusChange = { task -> taskViewModel.changeTaskStatus(userId, task) },
         onSyncClick = { id ->
             taskViewModel.syncTasks(userId = id, onResult = { success: Boolean ->
-                val message = if (success) "Sincronizado com sucesso!" else "Falha na sincronização. Verifique sua conexão."
+                val message = if (success) "Sincronizado com sucesso!" else "Falha ou permissão negada."
                 android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
             })
         }
@@ -71,18 +77,72 @@ fun TaskListScreen(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun TaskListContent(
-    userId: String, // Receive userId
+    userId: String,
     tasks: List<Tarefa>,
+    syncConsent: Boolean,
+    onConsentChange: (Boolean) -> Unit,
     onLogoutClick: () -> Unit,
     onAddTaskClick: () -> Unit,
     onEditTaskClick: (Tarefa) -> Unit,
     onDeleteTask: (String) -> Unit,
     onStatusChange: (Tarefa) -> Unit,
-    onSyncClick: (String) -> Unit // Receive sync function
+    onSyncClick: (String) -> Unit
 ) {
     var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
+    var showSettingsDialog by remember { mutableStateOf(false) } // Controle do diálogo
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
-    val scope = rememberCoroutineScope() // Add coroutine scope here for toast
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Diálogo de Configurações
+    if (showSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSettingsDialog = false },
+            title = { Text("Configurações de Privacidade") },
+            text = {
+                Column {
+                    Text("Gerencie como seus dados são tratados.", fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Sincronizar dados na nuvem",
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = syncConsent,
+                            onCheckedChange = { isChecked ->
+                                onConsentChange(isChecked)
+                            }
+                        )
+                    }
+                    if (!syncConsent) {
+                        Text(
+                            text = "A sincronização está desativada. Seus dados permanecerão apenas neste dispositivo.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    } else {
+                        Text(
+                            text = "Seus dados serão copiados para a nuvem para backup.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSettingsDialog = false }) {
+                    Text("Fechar")
+                }
+            }
+        )
+    }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -94,20 +154,33 @@ fun TaskListContent(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 title = {
-                    Text("NoteSync", textAlign = TextAlign.Center) // Center title
+                    Text("NoteSync", textAlign = TextAlign.Center)
                 },
                 navigationIcon = {
                     IconButton(onClick = onLogoutClick) {
                         Icon(Icons.Default.Logout, contentDescription = "LogOut")
                     }
                 },
-                actions = { // Add actions block for buttons on the right
+                actions = {
+                    // Botão de Sync
                     IconButton(onClick = {
                         scope.launch {
-                            onSyncClick(userId)
+                            if (syncConsent) {
+                                onSyncClick(userId)
+                            } else {
+                                android.widget.Toast.makeText(context, "Habilite a sincronização nas configurações.", android.widget.Toast.LENGTH_LONG).show()
+                            }
                         }
                     }) {
-                        Icon(Icons.Default.Sync, contentDescription = "Sincronizar")
+                        Icon(
+                            Icons.Default.Sync,
+                            contentDescription = "Sincronizar",
+                            tint = if (syncConsent) MaterialTheme.colorScheme.primary else Color.Gray
+                        )
+                    }
+                    // Botão de Configurações
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configurações")
                     }
                 },
                 scrollBehavior = scrollBehavior
@@ -219,7 +292,7 @@ fun TaskListContent(
 fun TaskItem(
     tarefa: Tarefa,
     isToDoList: Boolean,
-    onEditClick: () -> Unit, // Removido NavController, agora recebe uma função
+    onEditClick: () -> Unit,
     onDeleteTask: (taskId: String) -> Unit,
     onStatusChange: (task: Tarefa) -> Unit
 ) {
@@ -341,7 +414,7 @@ fun AddTaskContent(
     var desc by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<Long?>(null) }
     var isSaving by remember { mutableStateOf(false) }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val calendar = java.util.Calendar.getInstance()
 
     Scaffold(
@@ -487,7 +560,7 @@ fun EditTaskContent(
     var desc by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf<Long?>(null) }
     var isSaving by remember { mutableStateOf(false) }
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val calendar = java.util.Calendar.getInstance()
 
     LaunchedEffect(taskToEdit) {

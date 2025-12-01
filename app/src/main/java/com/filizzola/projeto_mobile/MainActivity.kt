@@ -54,8 +54,10 @@ import com.filizzola.projeto_mobile.worker.SyncWorker
 object SupabaseConfig {
     val client by lazy {
         createSupabaseClient(
-            supabaseUrl = "https://xyzcompany.supabase.co",
-            supabaseKey = "publishable-or-anon-key"
+//            supabaseUrl = "https://xyzcompany.supabase.co",
+//            supabaseKey = "publishable-or-anon-key"
+            supabaseUrl = "https://hotdhewlluokhhxamydi.supabase.co/",
+            supabaseKey = "sb_publishable_Te2ter0ZFhL4kZKozwFgEA_aFhW7_lD"
         ) {
             install(Auth)
             install(Postgrest)

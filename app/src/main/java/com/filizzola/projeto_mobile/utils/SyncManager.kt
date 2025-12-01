@@ -18,10 +18,17 @@ private val Context.taskDataStore by preferencesDataStore(name = "tasks_local_st
 class SyncManager(private val context: Context) {
 
     private val networkManager = NetworkManager(context)
+    private val loginManager = LoginManager(context) // Instância do LoginManager
     private val gson = Gson()
 
     suspend fun syncWithServer(userId: String): Boolean = withContext(Dispatchers.IO) {
         try {
+            // VERIFICAÇÃO DE CONSENTIMENTO
+            if (!loginManager.hasSyncConsent()) {
+                Log.d("SyncManager", "Sincronização abortada: Usuário não forneceu consentimento.")
+                return@withContext false
+            }
+
             val hasConnection = networkManager.isConnected()
 
             if (!hasConnection) {

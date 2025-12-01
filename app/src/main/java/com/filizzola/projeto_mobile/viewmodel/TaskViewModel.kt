@@ -8,12 +8,11 @@ import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.data.UserRepository
 import com.filizzola.projeto_mobile.utils.LoginManager
 import com.filizzola.projeto_mobile.utils.NotificationHelper
+import com.filizzola.projeto_mobile.utils.SyncManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
-import com.filizzola.projeto_mobile.utils.SyncManager
 
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -23,6 +22,10 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     private val _user = MutableStateFlow<User?>(null)
     val user: StateFlow<User?> = _user.asStateFlow()
 
+    // Estado do consentimento
+    private val _syncConsent = MutableStateFlow(false)
+    val syncConsent: StateFlow<Boolean> = _syncConsent.asStateFlow()
+
     private val loginManager = LoginManager(application)
     private val syncManager = SyncManager(application)
 
@@ -31,6 +34,22 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
             val user = UserRepository.allUsers.find { it.id == userId }
             _user.value = user
             _tasks.value = user?.uTaskList?.filter { !it.isDeleted }?.toList() ?: emptyList()
+
+            // Carrega também o status do consentimento
+            loadSyncConsent()
+        }
+    }
+
+    fun loadSyncConsent() {
+        viewModelScope.launch {
+            _syncConsent.value = loginManager.hasSyncConsent()
+        }
+    }
+
+    fun updateSyncConsent(granted: Boolean) {
+        viewModelScope.launch {
+            loginManager.setSyncConsent(granted)
+            _syncConsent.value = granted
         }
     }
 
@@ -87,6 +106,12 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun syncTasks(userId: String, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
+            // Verifica o consentimento antes de tentar sincronizar via ViewModel também
+            if (!loginManager.hasSyncConsent()) {
+                onResult(false) // Indica falha (ou falta de permissão)
+                return@launch
+            }
+
             val result = UserRepository.syncUserData(userId)
             if (result != null) {
                 saveToDisk(userId)

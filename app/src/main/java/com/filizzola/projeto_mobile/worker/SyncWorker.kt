@@ -5,9 +5,10 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.filizzola.projeto_mobile.data.UserRepository
+import com.filizzola.projeto_mobile.supabase
+import com.filizzola.projeto_mobile.utils.LoginManager
 import com.filizzola.projeto_mobile.utils.SyncManager
 import io.github.jan.supabase.auth.auth
-import com.filizzola.projeto_mobile.supabase
 
 class SyncWorker(
     context: Context,
@@ -15,8 +16,16 @@ class SyncWorker(
 ) : CoroutineWorker(context, workerParams) {
 
     private val syncManager = SyncManager(context)
+    private val loginManager = LoginManager(context)
 
     override suspend fun doWork(): Result {
+        // VERIFICAÇÃO DE CONSENTIMENTO
+        if (!loginManager.hasSyncConsent()) {
+            Log.d("SyncWorker", "Worker cancelado: Sem consentimento de sincronização.")
+            // Retorna success para não ficar tentando reexecutar desnecessariamente
+            return Result.success()
+        }
+
         Log.d("SyncWorker", "Iniciando sincronização em segundo plano...")
         return try {
             val session = supabase.auth.currentSessionOrNull()

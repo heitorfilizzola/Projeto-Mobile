@@ -1,6 +1,7 @@
 package com.filizzola.projeto_mobile.utils
 
 import android.content.Context
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -11,8 +12,10 @@ private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 class LoginManager(private val context: Context) {
 
     private val USER_ID_KEY = stringPreferencesKey("user_id")
-    // NOVA CHAVE: Para salvar o token de sessão do Supabase
+    // Chave para salvar o token de sessão do Supabase
     private val USER_SESSION_KEY = stringPreferencesKey("user_session")
+    // NOVA CHAVE: Consentimento de sincronização
+    private val SYNC_CONSENT_KEY = booleanPreferencesKey("sync_consent")
 
     suspend fun saveLoggedUser(userId: String) {
         context.dataStore.edit { preferences ->
@@ -24,7 +27,6 @@ class LoginManager(private val context: Context) {
         val preferences = context.dataStore.data.first()
         return preferences[USER_ID_KEY]
     }
-
 
     suspend fun saveSession(sessionJson: String) {
         context.dataStore.edit { preferences ->
@@ -38,11 +40,26 @@ class LoginManager(private val context: Context) {
         return preferences[USER_SESSION_KEY]
     }
 
-
     suspend fun clearLoggedUser() {
         context.dataStore.edit { preferences ->
             preferences.remove(USER_ID_KEY)
             preferences.remove(USER_SESSION_KEY)
+            // Opcional: Remover consentimento ao deslogar ou manter
+            // preferences.remove(SYNC_CONSENT_KEY)
         }
+    }
+
+    // --- Métodos de Consentimento ---
+
+    suspend fun setSyncConsent(isAllowed: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SYNC_CONSENT_KEY] = isAllowed
+        }
+    }
+
+    suspend fun hasSyncConsent(): Boolean {
+        val preferences = context.dataStore.data.first()
+        // Padrão é false (não permitido) até que o usuário ative
+        return preferences[SYNC_CONSENT_KEY] ?: false
     }
 }
