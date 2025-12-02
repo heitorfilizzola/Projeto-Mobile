@@ -121,6 +121,13 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun changePassword(newPassword: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = UserRepository.updatePassword(newPassword)
+            onResult(success)
+        }
+    }
+
     fun logout() {
         viewModelScope.launch {
             UserRepository.logout()

@@ -129,12 +129,17 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
     LaunchedEffect(Unit) {
         val savedUserId = loginManager.getLoggedUser()
         val savedSessionJson = loginManager.getSession()
+        
+        var restoredUsername = "Usuário"
+        var restoredEmail = ""
 
         if (savedUserId != null) {
             if (savedSessionJson != null) {
                 try {
                     val session = json.decodeFromString<UserSession>(savedSessionJson)
                     supabase.auth.importSession(session)
+                    restoredUsername = session.user?.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: "Usuário"
+                    restoredEmail = session.user?.email ?: ""
                     Log.d("Auth", "Sessão restaurada com sucesso!")
                 } catch (e: Exception) {
                     Log.e("Auth", "Erro ao restaurar sessão.", e)
@@ -143,7 +148,7 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
 
             val localTasks = syncManager.loadTasksFromLocal(savedUserId)
             if (localTasks.isNotEmpty()) {
-                UserRepository.loadFromCache(savedUserId, localTasks)
+                UserRepository.loadFromCache(savedUserId, localTasks, restoredUsername, restoredEmail)
                 startDestination = Routes.tasks(savedUserId)
             }
 
@@ -155,6 +160,19 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
 
                     val currentSession = supabase.auth.currentSessionOrNull()
                     if (currentSession != null) {
+                        // Atualiza metadados se possível
+                        val latestUsername = currentSession.user?.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: restoredUsername
+                        val latestEmail = currentSession.user?.email ?: restoredEmail
+                        
+                        // Atualiza o usuário na memória com os dados mais recentes (caso o sync tenha trazido algo novo ou apenas para garantir)
+                        // Nota: syncUserData já atualiza as tarefas, mas loadFromCache pode ter sobrescrito o User object.
+                        // O ideal é garantir que o objeto User na RAM tenha o nome correto.
+                        val currentUser = UserRepository.allUsers.find { it.id == savedUserId }
+                        if (currentUser != null && currentUser.username == "Modo Offline") {
+                             // Se ainda estiver como modo offline (caso loadFromCache tenha sido chamado sem sessão válida inicialmente mas agora temos internet/sessão)
+                             // Aqui a gente atualiza. Mas como extraímos da sessão antes, já deve estar certo.
+                        }
+
                         loginManager.saveSession(json.encodeToString(currentSession))
                     }
 

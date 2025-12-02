@@ -187,6 +187,19 @@ object UserRepository {
         }
     }
 
+    suspend fun updatePassword(newPassword: String): Boolean {
+        try {
+            supabase.auth.updateUser {
+                password = newPassword
+            }
+            Log.d("UpdatePassword", "Senha atualizada com sucesso.")
+            return true
+        } catch (e: Exception) {
+            Log.e("UpdatePassword", "Erro ao atualizar senha: ${e.message}", e)
+            return false
+        }
+    }
+
     suspend fun login(email: String, password: String): User? {
         val loginTag = "LoginProcess"
         try {
@@ -457,11 +470,11 @@ object UserRepository {
     }
 
     // Injeção de dados do disco para a memória (usado pelo MainActivity)
-    fun loadFromCache(userId: String, cachedTasks: List<Tarefa>) {
+    fun loadFromCache(userId: String, cachedTasks: List<Tarefa>, username: String = "Modo Offline", email: String = "") {
         val user = User(
             id = userId,
-            username = "Modo Offline",
-            email = "",
+            username = username,
+            email = email,
             uTaskList = ArrayList(cachedTasks)
         )
         val existingUserIndex = allUsers.indexOfFirst { it.id == userId }
@@ -470,7 +483,7 @@ object UserRepository {
         } else {
             allUsers.add(user)
         }
-        Log.d("UserRepository", "Memória RAM restaurada via Armazenamento Local.")
+        Log.d("UserRepository", "Memória RAM restaurada via Armazenamento Local para $username.")
     }
 
     // (Opcional) Mantive a reloadUserData antiga por compatibilidade,

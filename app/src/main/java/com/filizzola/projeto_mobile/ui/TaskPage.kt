@@ -1,14 +1,22 @@
 package com.filizzola.projeto_mobile.ui
 
 import androidx.compose.animation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.WorkHistory
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,9 +31,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.filizzola.projeto_mobile.data.Tarefa
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.filizzola.projeto_mobile.data.User
 import com.filizzola.projeto_mobile.viewmodel.TaskViewModel
 import kotlinx.coroutines.launch
 
@@ -37,18 +46,19 @@ fun TaskListScreen(
     taskViewModel: TaskViewModel = viewModel()
 ) {
     val tarefas by taskViewModel.tasks.collectAsState()
-    val syncConsent by taskViewModel.syncConsent.collectAsState() // Coleta o consentimento
+    val user by taskViewModel.user.collectAsState()
+    val syncConsent by taskViewModel.syncConsent.collectAsState()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
         taskViewModel.loadTasks(userId)
-        // O consentimento é carregado dentro de loadTasks agora
     }
 
     val context = LocalContext.current
 
     TaskListContent(
         userId = userId,
+        user = user,
         tasks = tarefas,
         syncConsent = syncConsent,
         onConsentChange = { isGranted -> taskViewModel.updateSyncConsent(isGranted) },
@@ -70,14 +80,21 @@ fun TaskListScreen(
                 val message = if (success) "Sincronizado com sucesso!" else "Falha ou permissão negada."
                 android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
             })
+        },
+        onConfirmPasswordChange = { newPassword ->
+            taskViewModel.changePassword(newPassword) { success ->
+                val message = if (success) "Senha alterada com sucesso!" else "Erro ao alterar senha."
+                android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun TaskListContent(
     userId: String,
+    user: User?,
     tasks: List<Tarefa>,
     syncConsent: Boolean,
     onConsentChange: (Boolean) -> Unit,
@@ -86,13 +103,73 @@ fun TaskListContent(
     onEditTaskClick: (Tarefa) -> Unit,
     onDeleteTask: (String) -> Unit,
     onStatusChange: (Tarefa) -> Unit,
-    onSyncClick: (String) -> Unit
+    onSyncClick: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit
 ) {
-    var telaAtual by rememberSaveable { mutableStateOf("A fazer") }
-    var showSettingsDialog by remember { mutableStateOf(false) } // Controle do diálogo
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showProfileDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // Diálogo de Troca de Senha
+    if (showChangePasswordDialog) {
+        var newPassword by remember { mutableStateOf("") }
+        var confirmPassword by remember { mutableStateOf("") }
+        var passwordError by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showChangePasswordDialog = false },
+            title = { Text("Trocar Senha") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("Nova Senha") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        isError = passwordError
+                    )
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            passwordError = newPassword != it
+                        },
+                        label = { Text("Confirmar Nova Senha") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        isError = passwordError
+                    )
+                    if (passwordError) {
+                        Text("As senhas não coincidem.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newPassword.isNotBlank() && newPassword == confirmPassword) {
+                            onConfirmPasswordChange(newPassword)
+                            showChangePasswordDialog = false
+                        } else {
+                            passwordError = true
+                        }
+                    }
+                ) {
+                    Text("Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChangePasswordDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
 
     // Diálogo de Configurações
     if (showSettingsDialog) {
@@ -144,6 +221,70 @@ fun TaskListContent(
         )
     }
 
+    // Diálogo de Perfil
+    if (showProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showProfileDialog = false },
+            title = {
+                 Row(verticalAlignment = Alignment.CenterVertically) {
+                     Icon(Icons.Outlined.AccountCircle, contentDescription = null, modifier = Modifier.size(28.dp))
+                     Spacer(modifier = Modifier.width(8.dp))
+                     Text("Perfil do Usuário")
+                 }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = user?.username ?: "Usuário",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = user?.email ?: "Email não disponível",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    
+                    TextButton(
+                        onClick = { 
+                            showProfileDialog = false
+                            showChangePasswordDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 0.dp)
+                    ) {
+                         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                             Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(20.dp))
+                             Spacer(modifier = Modifier.width(12.dp))
+                             Text("Trocar Senha", color = MaterialTheme.colorScheme.onSurface)
+                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Button(
+                        onClick = {
+                            showProfileDialog = false
+                            onLogoutClick()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                    ) {
+                         Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                         Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sair da Conta")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showProfileDialog = false }) {
+                    Text("Fechar")
+                }
+            }
+        )
+    }
+
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
@@ -157,8 +298,20 @@ fun TaskListContent(
                     Text("NoteSync", textAlign = TextAlign.Center)
                 },
                 navigationIcon = {
-                    IconButton(onClick = onLogoutClick) {
-                        Icon(Icons.Default.Logout, contentDescription = "LogOut")
+                    // Botão de Perfil (antigo Logout)
+                     IconButton(onClick = { showProfileDialog = true }) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = user?.username?.firstOrNull()?.uppercase() ?: "U",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 },
                 actions = {
@@ -189,42 +342,63 @@ fun TaskListContent(
         bottomBar = {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 2.dp)
+                    .padding(horizontal = 12.dp, vertical = 12.dp)
                     .navigationBarsPadding()
             ) {
                 BottomAppBar(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    modifier = Modifier.clip(RoundedCornerShape(24.dp)),
+                    tonalElevation = 2.dp
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                    NavigationBarItem(
+                        selected = pagerState.currentPage == 0,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+                        icon = {
+                            Icon(
+                                imageVector = if (pagerState.currentPage == 0) Icons.Filled.WorkHistory else Icons.Outlined.WorkHistory,
+                                contentDescription = "A fazer"
+                            )
+                        },
+                        label = { Text("A fazer", fontWeight = if(pagerState.currentPage == 0) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Button(onClick = { telaAtual = "A fazer" }, modifier = Modifier.fillMaxHeight(0.7f)) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.WorkHistory, "A fazer")
-                                Text("A fazer", fontSize = 8.sp)
-                            }
-                        }
-
-                        Button(
+                        FloatingActionButton(
                             onClick = onAddTaskClick,
-                            modifier = Modifier.fillMaxHeight(0.90f)
-                        ){
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Add, "Criar")
-                                Text("Criar", fontSize = 11.sp)
-                            }
-                        }
-
-                        Button(onClick = { telaAtual = "Feito" }, modifier = Modifier.fillMaxHeight(0.7f)) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Done, "Feito")
-                                Text("Feito", fontSize = 8.sp)
-                            }
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Criar")
                         }
                     }
+
+                    NavigationBarItem(
+                        selected = pagerState.currentPage == 1,
+                        onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+                        icon = {
+                            Icon(
+                                imageVector = if (pagerState.currentPage == 1) Icons.Filled.TaskAlt else Icons.Outlined.TaskAlt,
+                                contentDescription = "Feito"
+                            )
+                        },
+                        label = { Text("Feito", fontWeight = if(pagerState.currentPage == 1) FontWeight.Bold else FontWeight.Normal) },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
                 }
             }
         }
@@ -235,19 +409,11 @@ fun TaskListContent(
                 .background(Color(0xFF0F172A)),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AnimatedContent(
-                targetState = telaAtual,
-                label = "animacao_tela",
-                transitionSpec = {
-                    if (targetState == "Feito" && initialState == "A fazer") {
-                        slideInHorizontally { width -> width } + fadeIn() togetherWith
-                                slideOutHorizontally { width -> -width } + fadeOut()
-                    } else {
-                        slideInHorizontally { width -> -width } + fadeIn() togetherWith
-                                slideOutHorizontally { width -> width } + fadeOut()
-                    }
-                }
-            ) { telaAlvo ->
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                val telaAlvo = if (page == 0) "A fazer" else "Feito"
                 val tarefasFiltradas = tasks.filter { it.status == telaAlvo }
 
                 LazyColumn(
