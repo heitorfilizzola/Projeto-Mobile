@@ -46,6 +46,11 @@ class TaskViewModelTest {
 
         // Default behaviors
         coEvery { anyConstructed<LoginManager>().clearLoggedUser() } returns Unit
+
+        // --- CORREÇÃO: Simular que o consentimento existe por padrão para os testes ---
+        coEvery { anyConstructed<LoginManager>().hasSyncConsent() } returns true
+        // --------------------------------------------------------------------------
+
         coEvery { anyConstructed<SyncManager>().saveTaskLocally(any(), any()) } returns 0 // saveTaskLocally returns Int (from Log.d)
         coEvery { NotificationHelper.scheduleNotification(any(), any()) } returns Unit
         coEvery { NotificationHelper.cancelNotification(any(), any()) } returns Unit
@@ -60,17 +65,17 @@ class TaskViewModelTest {
     fun `loadTasks deve carregar tarefas do usuario filtrando as deletadas`() = runTest {
         // Arrange
         val activeTask = Tarefa(
-            id = "t1", 
-            titulo = "Active", 
-            status = "A fazer", 
-            userId = userId, 
+            id = "t1",
+            titulo = "Active",
+            status = "A fazer",
+            userId = userId,
             isDeleted = false
         )
         val deletedTask = Tarefa(
-            id = "t2", 
-            titulo = "Deleted", 
-            status = "A fazer", 
-            userId = userId, 
+            id = "t2",
+            titulo = "Deleted",
+            status = "A fazer",
+            userId = userId,
             isDeleted = true
         )
         testUser.uTaskList.clear()
@@ -103,7 +108,7 @@ class TaskViewModelTest {
         coVerify { UserRepository.addTaskToUser(userId, any()) }
         coVerify { NotificationHelper.scheduleNotification(any(), any()) }
         coVerify { anyConstructed<SyncManager>().saveTaskLocally(userId, any()) } // Verifica persistência
-        
+
         assertEquals(1, viewModel.tasks.value.size)
         assertEquals("Nova Tarefa", viewModel.tasks.value[0].titulo)
     }
@@ -134,10 +139,9 @@ class TaskViewModelTest {
 
         coEvery { UserRepository.deleteTaskForUser(userId, any()) } answers {
             // Simula comportamento do Repo (Soft delete na RAM)
-            val t = testUser.uTaskList.find { it.id == arg(1) }
             // Na implementação real do repo ele altera o objeto, aqui removemos ou simulamos
             // Como o ViewModel recarrega filtrando !isDeleted, vamos remover da lista 'visível' do repo mock
-             testUser.uTaskList.removeIf { it.id == arg(1) }
+            testUser.uTaskList.removeIf { it.id == arg(1) }
         }
 
         // Act

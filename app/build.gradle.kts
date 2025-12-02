@@ -74,6 +74,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.5")
     implementation("com.google.code.gson:gson:2.10.1")
 
+//    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
