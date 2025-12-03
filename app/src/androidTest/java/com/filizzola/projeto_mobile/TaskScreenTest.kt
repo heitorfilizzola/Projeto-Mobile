@@ -21,7 +21,8 @@ class TaskPageUiTest {
         composeTestRule.setContent {
             AddTaskContent(
                 onBackClick = {},
-                onSaveTask = { titulo, desc ->
+                // CORREÇÃO 1: Adicionado o parâmetro 'dueDate' (ignorado aqui com _)
+                onSaveTask = { titulo, desc, _ ->
                     savedTitle = titulo
                     savedDesc = desc
                     wasSaved = true
@@ -52,11 +53,18 @@ class TaskPageUiTest {
         composeTestRule.setContent {
             TaskListContent(
                 tasks = dummyTasks,
+                // CORREÇÃO 2: Adicionados parâmetros obrigatórios novos
+                userId = "user_teste",
+                user = null, // Pode passar null para testes visuais simples
+                syncConsent = false,
+                onConsentChange = {},
                 onLogoutClick = {},
                 onAddTaskClick = {},
                 onEditTaskClick = {},
                 onDeleteTask = {},
-                onStatusChange = {}
+                onStatusChange = {},
+                onSyncClick = {},
+                onConfirmPasswordChange = {}
             )
         }
 
@@ -67,7 +75,8 @@ class TaskPageUiTest {
         composeTestRule
             .onAllNodesWithText("A fazer")
             .onFirst()
-            .assertIsDisplayed()    }
+            .assertIsDisplayed()
+    }
 
     @Test
     fun taskList_whenAddClicked_callsCallback() {
@@ -76,11 +85,18 @@ class TaskPageUiTest {
         composeTestRule.setContent {
             TaskListContent(
                 tasks = emptyList(),
+                // CORREÇÃO 3: Adicionados parâmetros obrigatórios novos
+                userId = "user_teste",
+                user = null,
+                syncConsent = false,
+                onConsentChange = {},
                 onLogoutClick = {},
                 onAddTaskClick = { addClicked = true },
                 onEditTaskClick = {},
                 onDeleteTask = {},
-                onStatusChange = {}
+                onStatusChange = {},
+                onSyncClick = {},
+                onConfirmPasswordChange = {}
             )
         }
 
@@ -88,8 +104,6 @@ class TaskPageUiTest {
 
         assert(addClicked)
     }
-
-
 
     @Test
     fun editTask_loadsExistingData_andSavesChanges() {
@@ -108,7 +122,7 @@ class TaskPageUiTest {
             EditTaskContent(
                 taskToEdit = existingTask,
                 onBackClick = {},
-                onSaveClick = { t, d ->
+                onSaveClick = { t, d, _ ->
                     newTitle = t
                     wasSaved = true
                 }

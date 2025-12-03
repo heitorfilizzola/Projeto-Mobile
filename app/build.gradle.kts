@@ -28,6 +28,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -72,9 +73,12 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.3.1")
 
     implementation("androidx.navigation:navigation-compose:2.9.5")
+
     implementation("com.google.code.gson:gson:2.10.1")
 
-//    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
+    // --- IMPLEMENTAÇÃO DO SENTRY ---
+    implementation("io.sentry:sentry-android:7.14.0")
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -87,7 +91,7 @@ dependencies {
 
     testImplementation("org.slf4j:slf4j-simple:2.0.9")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("io.mockk:mockk:1.13.8") // Corrige erros de 'mockk', 'every', 'verify'
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3") // Corrige 'runTest', 'MainDispatcherRule'
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
 }

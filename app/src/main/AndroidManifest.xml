@@ -16,6 +16,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ProjetoMobile">
+
+        <meta-data
+            android:name="io.sentry.dsn"
+            android:value="https://ba290776edb549a9ba5c858008a23612@o4510467993501696.ingest.us.sentry.io/4510468136042496" />
+
+        <meta-data android:name="io.sentry.auto-init" android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -23,14 +30,12 @@
             android:theme="@style/Theme.ProjetoMobile">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="notesync" android:host="email-verificado" />
             </intent-filter>
         </activity>

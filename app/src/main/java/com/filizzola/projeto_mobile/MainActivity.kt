@@ -49,6 +49,8 @@ import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import java.util.concurrent.TimeUnit
 import com.filizzola.projeto_mobile.worker.SyncWorker
+import io.sentry.Sentry
+
 
 
 object SupabaseConfig {
@@ -76,6 +78,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+    // waiting for view to draw to better represent a captured error with a screenshot
+    findViewById<android.view.View>(android.R.id.content).viewTreeObserver.addOnGlobalLayoutListener {
+      try {
+        throw Exception("This app uses Sentry! :)")
+      } catch (e: Exception) {
+        Sentry.captureException(e)
+      }
+    }
+
         enableEdgeToEdge()
 
         networkManager = NetworkManager(this)
@@ -129,7 +140,7 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
     LaunchedEffect(Unit) {
         val savedUserId = loginManager.getLoggedUser()
         val savedSessionJson = loginManager.getSession()
-        
+
         var restoredUsername = "Usuário"
         var restoredEmail = ""
 
@@ -163,7 +174,7 @@ private fun AppNavigation(loginManager: LoginManager, syncManager: SyncManager) 
                         // Atualiza metadados se possível
                         val latestUsername = currentSession.user?.userMetadata?.get("username")?.toString()?.removeSurrounding("\"") ?: restoredUsername
                         val latestEmail = currentSession.user?.email ?: restoredEmail
-                        
+
                         // Atualiza o usuário na memória com os dados mais recentes (caso o sync tenha trazido algo novo ou apenas para garantir)
                         // Nota: syncUserData já atualiza as tarefas, mas loadFromCache pode ter sobrescrito o User object.
                         // O ideal é garantir que o objeto User na RAM tenha o nome correto.

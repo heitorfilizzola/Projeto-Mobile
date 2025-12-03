@@ -1,1 +1,4 @@
 /build/
+
+# Sentry Config File
+sentry.properties
